@@ -1,10 +1,13 @@
 
-#include <sdcard.h>
+#include "headers/utils/sdcard.h"
 String logFilename;
 String datalogHeader;
+SPIClass hspi(HSPI);
+SPIClass vspi(VSPI);
+// TaskHandle_t Task1;
+// QueueHandle_t xQueue;
 volatile int howManyDatas = 0;
 bool lastLED = true;
-const int chipSelect = 10;
 
 String getNewLogFilename(){
   int fileIndex = 1;
@@ -17,36 +20,121 @@ String getNewLogFilename(){
   return filename;
 }
 // appendFile(SD, "/hello.txt", "World!\n");
-void sdSetup()
+void writeCSVLine(fs::FS &fs, const char *path, const char *message)
 {
-  Serial.print("Initializing SD card...");
-
-  if (!SD.begin(chipSelect)) {
-    Serial.println("initialization failed. Things to check:");
-    Serial.println("1. is a card inserted?");
-    Serial.println("2. is your wiring correct?");
-    Serial.println("3. did you change the chipSelect pin to match your shield or module?");
-    Serial.println("Note: press reset button on the board and reopen this Serial Monitor after fixing your issue!");
-    while (true);
+  //Serial.printf("Appending to file: %s\n", path);
+  File file = fs.open(path, FILE_APPEND);
+  if (!file)
+  {
+    //Serial.println("Failed to open file for appending");
+    return;
   }
-
-  Serial.println("initialization done.");
-
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  File dataFile = SD.open(getNewLogFilename());
-
-  // if the file is available, write to it:
-  if (dataFile) {
-    while (dataFile.available()) {
-      Serial.write(dataFile.read());
-    }
-    dataFile.close();
+  if (file.print(message))
+  {
+    //Serial.println("Message appended");
+    digitalWrite(2,!lastLED);
+    lastLED = !lastLED;
   }
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println("error opening datalog.txt");
+  else
+  {
+    Serial.println("Append failed");
   }
+  file.close();
 }
 
+// void sdTask(void *parameter) {
+//   char *message = (char *)parameter;  
+//   writeCSVLine(SD, logFilename.c_str(), message);
+// }
+void sdSetup()
+{
+  vspi.begin(SD_SCK,SD_MISO,SD_MOSI,SD_CS);
+
+  if (!SD.begin(SD_CS, vspi))
+  {
+    Serial.println("Card Mount Failed");
+    return;
+  }
+  uint8_t cardType = SD.cardType();
+
+  if (cardType == CARD_NONE)
+  {
+    Serial.println("No SD card attached");
+    return;
+  }
+
+  Serial.print("SD Card Type: ");
+  if (cardType == CARD_MMC)
+  {
+    Serial.println("MMC");
+  }
+  else if (cardType == CARD_SD)
+  {
+    Serial.println("SDSC");
+  }
+  else if (cardType == CARD_SDHC)
+  {
+    Serial.println("SDHC");
+  }
+  else
+  {
+    Serial.println("UNKNOWN");
+  }
+
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  Serial.printf("SD Card Size: %lluMB\n", cardSize);
+
+  logFilename = getNewLogFilename();
+  Serial.println(logFilename);
+
+  datalogHeader = "timeElapsed,pressure,alt,altV,globalVertAccel,localVertAccel,zenith,predApogee,dragCoef,parachuteDeployed?,flapsDeployed?,flightState\n";
+  writeCSVLine(SD, logFilename.c_str(), datalogHeader.c_str());
+
+
+  // xQueue = xQueueCreate(10,MAX_STRING_SIZE);//~300 bytes per line
+  // delay(1000);
+
+  
+  //writeCSVLine(SD, logFilename.c_str(), "Time, Baro");
+}
+
+
+
+void logData(String dataString)
+{
+  //Serial.println("Logging Data");
+  // DATA INPUTS
+  //String dataStringTest = "1";
+  // if (howManyDatas < 10){// enable or disable logging
+  // char buffer[MAX_STRING_SIZE] = "";
+  //if (xQueueSend(xQueue, "1", portMAX_DELAY) != pdPASS){
+// //UNDO COMMENTS BELOWO
+  // if (xQueueSend(xQueue, dataString.c_str(), 0) != pdPASS){
+  //   Serial.println("Queue Full! Data Lost.");
+  // } 
+  
+  
+  writeCSVLine(SD, logFilename.c_str(), dataString.c_str());
+  // xTaskCreatePinnedToCore(
+  //   sdTask,      // Function to execute
+  //   "Blink Task",   // Task name
+  //   8192,           // Stack size (in words)
+  //   dataString.c_str(),           // Task input parameter
+  //   1,              // Priority (higher number = higher priority)
+  //   &Task1,         // Task handle
+  //   1               // Core 1
+  
+
+  //Serial.println(dataString);
+//NOW STOP UNDO
+    //Serial.println(uxQueueSpacesAvailable(xQueue));
+
+    // Serial.println("SD queue full");
+    // queueOverflowCoolown = millis()+200;
+  
+  // EXTRA
+  //writeCSVLine(SD, logFilename.c_str(), dataString.c_str());
+  //writeCSVLine(SD, logFilename.c_str(), dataString.c_str());
+  //Serial.println(dataString);
+ }
 

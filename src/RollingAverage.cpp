@@ -1,7 +1,7 @@
-#include <RollingAverage.h>
+#include "headers/utils/RollingAverage.h"
 
 
-//also known as a low pass filter
+
 RollingAverage::RollingAverage(int rollLen){
     rollingLen = rollLen;//default
     dataIndex = 0;
