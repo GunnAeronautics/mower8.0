@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 #define FAKE_IMU true
-#define DEBUG true
+// #define DEBUG
 
 // ============================================================================
 // HARDWARE PIN CONFIGURATION

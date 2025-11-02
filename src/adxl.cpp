@@ -129,7 +129,7 @@ void adxlSetup(void)
   Serial.println("Setup ADXL complete.");
 }
 
-void getADXLData(void)
+void getADXLData()
 {
   /* Get a new sensor event */
   sensors_event_t event;

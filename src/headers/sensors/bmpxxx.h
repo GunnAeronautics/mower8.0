@@ -27,7 +27,10 @@ extern BaroData baroData_unified;
 extern BMPSensor activeSensor;
 extern float lastAltitude;
 extern float lastAltitudeBuiltIn;
-
+extern double altitude390;
+extern double altitude580;
+extern double altitudeV390;
+extern double altitudeV580;
 // ============================================================================
 // INITIALIZATION AND SETUP
 // ============================================================================
@@ -116,5 +119,7 @@ bool isBMP580Active();
  * @return Altitude in meters
  */
 float pressToAlt(float pres);
+float pressToAlt390(float pres);
+float pressToAlt580(float pres);
 
 #endif // BMPXXX_H

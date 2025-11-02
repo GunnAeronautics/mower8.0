@@ -12,16 +12,33 @@ BaroData baroData_unified = {0};
 
 // Rolling averages for sensor data
 RollingAverage pressureRoll(4);
+RollingAverage pressureRoll390(10);
+RollingAverage pressureRoll580(10);
+
 RollingAverage temperatureRoll(8);
+
 RollingAverage altitudeVRoll(10);
+RollingAverage altitudeVRoll390(10);
+RollingAverage altitudeVRoll580(10);
 
 // Raw sensor data
 float lastAltitude = 0;
+float lastAltitude390 = 0;
+float lastAltitude580 = 0;
+
 float lastAltitudeBuiltIn = 0;
 float altitudeBuiltInV = 0;
-  
+
 float temp_390 = 0, pressure_390 = 0;
 float temp_580 = 0, pressure_580 = 0;
+double altitude390 = 0;
+double altitude580 = 0;
+double altitudeV390;
+double altitudeV580;
+
+double groundPressure390;
+double groundPressure580;
+
 bool bmp390_success = false;
 bool bmp580_success = false;
 
@@ -75,10 +92,11 @@ BMPSensor baroSetup()
     baroDataRead();
     delay(10);
   }
-
+  
   baroData_unified.groundTemperature = temperatureRoll.getData();
   baroData_unified.groundPressure = pressureRoll.getData();
-
+  groundPressure390 = pressureRoll390.getData();
+  groundPressure580 = pressureRoll580.getData();
   return activeSensor;
 }
 
@@ -145,6 +163,9 @@ void baroDataRead()
 
   temperatureRoll.newData(baroData_unified.temperature);
   pressureRoll.newData(baroData_unified.pressure);
+  pressureRoll390.newData(pressure_390);
+  pressureRoll580.newData(pressure_580);
+
 }
 
 
@@ -154,6 +175,19 @@ void altitudeProcessing(int deltaT)
   baroData_unified.altitude = pressToAlt(pressureRoll.getData());
   altitudeVRoll.newData((baroData_unified.altitude - lastAltitude) / deltaT * 1000000);
   baroData_unified.altitudeV = altitudeVRoll.getData();
+
+  
+  altitude390 = pressToAlt390(pressure_390);
+  altitude580 = pressToAlt580(pressure_580);
+
+  altitudeVRoll390.newData((altitude390 - lastAltitude390) / deltaT * 1000000);
+  altitudeVRoll580.newData((altitude580 - lastAltitude580) / deltaT * 1000000);
+  altitudeV390 = altitudeVRoll390.getData();
+  altitudeV580 = altitudeVRoll580.getData();
+
+  lastAltitude390 = altitude390;
+  lastAltitude580 = altitude580;
+
 }
 
 float pressToAlt(float pres)
@@ -163,6 +197,26 @@ float pressToAlt(float pres)
   // https://en.wikipedia.org/wiki/Barometric_formula
   return (float)(((273.0 + baroData_unified.groundTemperature) / (-.0065)) *
                  ((pow((pres / baroData_unified.groundPressure),
+                       ((8.314 * .0065) / (GRAVITY * .02896)))) -
+                  1.0));
+}
+float pressToAlt390(float pres)
+{
+  // Returns altitude (m) from pressure in hecta pascals and temperature in celsius
+  // https://www.mide.com/air-pressure-at-altitude-calculator
+  // https://en.wikipedia.org/wiki/Barometric_formula
+  return (float)(((273.0 + baroData_unified.groundTemperature) / (-.0065)) *
+                 ((pow((pres / groundPressure390),
+                       ((8.314 * .0065) / (GRAVITY * .02896)))) -
+                  1.0));
+}
+float pressToAlt580(float pres)
+{
+  // Returns altitude (m) from pressure in hecta pascals and temperature in celsius
+  // https://www.mide.com/air-pressure-at-altitude-calculator
+  // https://en.wikipedia.org/wiki/Barometric_formula
+  return (float)(((273.0 + baroData_unified.groundTemperature) / (-.0065)) *
+                 ((pow((pres / groundPressure580),
                        ((8.314 * .0065) / (GRAVITY * .02896)))) -
                   1.0));
 }
@@ -220,22 +274,12 @@ float getBaroData_BMP390_temp()
 
 float getBaroData_BMP390_pressure()
 {
-  if (activeSensor == BMP_390)
-  {
-    return pressure_390;
-  }
-  // Return zero if BMP390 is not active
-  return 0;
+  return pressure_390;
 }
 
 float getBaroData_BMP580_pressure()
 {
-  if (activeSensor == BMP_580)
-  {
-    return pressure_580;
-  }
-  // Return zero if BMP580 is not active
-  return 0;
+  return pressure_580;
 }
 
 float getBaroData_BMP580_temp()
