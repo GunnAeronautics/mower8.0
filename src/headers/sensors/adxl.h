@@ -11,6 +11,6 @@ extern double yAccel;
 extern double zAccel;
 
 void adxlSetup(void);
-void getADXLData(void);
+void getADXLData();
 
 #endif // ADXL_H
