@@ -36,11 +36,14 @@ bool parachuteDeployed = false;
 
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
 int numberOfNegatives = 0;
 int timesTheRocketIsStill = 0;
+float altitudeAccel = 0;
+double dragCoefficient = 0;
+
 KalmanVelocityEstimator kalman(1, 3);
 RollingAverage noAirBrakeDragCoef(100);
 RollingAverage airBrakeDragCoef(100);
@@ -75,23 +78,46 @@ float coefOfDrag(float accel, float v)
   float coef = abs(accel / v / v);
   return coef;
 }
+void writeDataHeader(){
+  String datalogHeader = 
+  "timeElapsed,"
+  "alt,"
+  "altV,"
+  "altA,"
+  "predictApogee nobrakes,"
+  "predictApogee brakes,"
+  "drag coef,"
+  "parachute Deployed,"
+  "dragFlaps deployed,"
+  "flight state,"
+  "time still,"
+
+  "so on"
+  "\n";
+  logData(datalogHeader);
+}
+
 void dataLogging()
 {
   BaroData baro = getBaroData();
-  // String dataString = String(timeElapsed) + ',' +                                                                                   // rocket flight time
-  //                     String(baro.pressure, DATAPRECISION) + ',' +                                                                  // pressure
-  //                     String(baro.altitude, DATAPRECISION) + ',' +                                                                  // alt
-  //                     String(baro.altitudeV, DATAPRECISION) + ',' +                                                                 // velocity - baro derived
-  //                     String(zAccel, DATAPRECISION) + ',' +                                                                         // global axis
-  //                     String(AccY, DATAPRECISION) + ',' +                                                                           // local axis
-  //                     String(zenith, DATAPRECISION) + ',' +                                                                         // angle from the vertical
-  //                     String(predictApogee(baro.altitude, baro.altitudeV, coefOfDrag(AccY, baro.altitudeV)), DATAPRECISION) + ',' + // apogee prediction
-  //                     String(coefOfDrag(AccY, baro.altitudeV)) + ',' +
-  //                     (String)parachuteDeployed + ',' +
-  //                     (String)dragFlapDeployed + ',' +
-  //                     (String)flightState + ',' +
-  //                     "\n";
-  // logData(dataString);
+  String dataString = String(timeElapsed) + ',' +                                                                                   // rocket flight time
+                      // String(pressure, DATAPRECISION) + ',' +                                                                  // pressure
+                      String(altitude580, DATAPRECISION) + ',' +                                                                  // alt
+                      String(altitudeV580, DATAPRECISION) + ',' +                                                                 // velocity - baro derived
+                      String(altitudeAccel, DATAPRECISION) + ',' +                                                                         // global axis
+                      // String(AccY, DATAPRECISION) + ',' +                                                                           // local axis
+                      // String(zenith, DATAPRECISION) + ',' +                                                                         // angle from the vertical
+                      String(predictApogee(altitude580, altitudeV580, noAirBrakeDragCoef.getData()), DATAPRECISION) + ',' + // apogee prediction
+                      String(predictApogee(altitude580, altitudeV580, airBrakeDragCoef.getData()), DATAPRECISION) + ',' + // apogee prediction
+
+                      String(dragCoefficient) + ',' +
+                      (String)parachuteDeployed + ',' +
+                      (String)dragFlapDeployed + ',' +
+                      (String)flightState + ',' +
+                      (String)timesTheRocketIsStill + ',' +
+
+                      "\n";
+  logData(dataString);
 }
 void setup()
 {
@@ -113,7 +139,7 @@ void setup()
   lastAltitudeBuiltIn = getAltitude();
 
   sdSetup();
-
+  writeDataHeader();
   servoSetup();
 
   lastT = micros();
@@ -182,7 +208,6 @@ void upwardLogic()
 float accelVelo = 0;
 float predAlt = 0;
 float error;
-float altitudeAccel = 0;
 int lastAirBrakeDeployTime = 0;
 int lastAirBrakeRetractTime = 0;
 void loop()
@@ -192,7 +217,7 @@ void loop()
   altitudeProcessing(deltaT);
   getADXLData();
   altitudeAccel = altitudeA580;//positive is upward and no gravity factored
-  double dragCoefficient = altitudeAccel/pow(altitudeV580,2);
+  dragCoefficient = altitudeAccel/pow(altitudeV580,2);
   
 #ifdef DEBUG
   delay(1000); // you only want a delay because serial printing is gets bogged down
@@ -305,18 +330,31 @@ void loop()
         }
 
         //safety vvv
-        if ((altitude580 > DESIRED_APOGEE)||(predictApogeeIdeal(altitude580,altitudeV580) > DESIRED_APOGEE)){
-          moveFlaps(100);
+        if ((altitude580 > DESIRED_APOGEE)){
+          //moveFlaps(100);
+          dragFlapDeployed = true;
+          lastAirBrakeDeployTime = millis();
         }
         // ^^^
+        //cooked saftey
+        if (predictApogeeIdeal(altitude580,altitudeV580) < DESIRED_APOGEE){
+          dragFlapDeployed = false;
+          lastAirBrakeRetractTime = millis();
+        }
 
         //the best part
         else{ 
           if (predictApogee(altitude580,altitudeV580,airBrakeDragCoef.getData()) >= DESIRED_APOGEE){
-            moveFlaps(100);
+            //moveFlaps(100);
+            dragFlapDeployed = true;
+            lastAirBrakeDeployTime = millis();
+
           }
           else{
-            moveFlaps(0);
+            //moveFlaps(0);
+            dragFlapDeployed = false;
+            lastAirBrakeRetractTime = millis();
+
           }
         }
         }
@@ -342,7 +380,10 @@ void loop()
     //============================================================
     break;
   case 3:
+    dataLogging();
+
     downwardLogic();
+    
     //checking if rocket on the ground
     //============================================================
     #pragma region 
