@@ -179,14 +179,17 @@ void altitudeProcessing(int deltaT)
   
   altitude390 = pressToAlt390(pressure_390);
   altitude580 = pressToAlt580(pressure_580);
-
+  altitudeA580 = ((altitudeV580-lastAltitudeV580) / deltaT * 1000000);
+  
   altitudeVRoll390.newData((altitude390 - lastAltitude390) / deltaT * 1000000);
   altitudeVRoll580.newData((altitude580 - lastAltitude580) / deltaT * 1000000);
+
   altitudeV390 = altitudeVRoll390.getData();
   altitudeV580 = altitudeVRoll580.getData();
 
   lastAltitude390 = altitude390;
   lastAltitude580 = altitude580;
+  lastAltitudeV580 = altitudeV580;
 
 }
 
