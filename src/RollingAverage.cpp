@@ -10,15 +10,24 @@ RollingAverage::RollingAverage(int rollLen){
   }
 
 void RollingAverage::newData(float data){
-
+    //what the average should divide by
+    divideBy ++;
+    if (divideBy > rollingLen){
+      divideBy = rollingLen;
+    }
+    
     average = average + data;
     average = average - rawData[dataIndex];
     rawData[dataIndex] = data;
     dataIndex ++;
     dataIndex %= rollingLen;
+
+    
   }
 
 float RollingAverage::getData(){
-
-    return average / rollingLen;
+    if (divideBy == 0){//prevent divide by 0
+      return 0;
+    }
+    return average / divideBy;
   }

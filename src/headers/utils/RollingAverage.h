@@ -13,7 +13,7 @@ class RollingAverage {
     int rollingLen;
     float *rawData;
     int dataIndex;
-    int startFlag;
+    int divideBy;
     float average;
 };
 

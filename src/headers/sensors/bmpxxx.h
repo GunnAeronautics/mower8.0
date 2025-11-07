@@ -31,6 +31,8 @@ extern double altitude390;
 extern double altitude580;
 extern double altitudeV390;
 extern double altitudeV580;
+extern double lastAltitudeV580;
+extern double altitudeA580;
 // ============================================================================
 // INITIALIZATION AND SETUP
 // ============================================================================

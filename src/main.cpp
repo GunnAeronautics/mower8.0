@@ -40,7 +40,10 @@ int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
 int numberOfNegatives = 0;
+int timesTheRocketIsStill = 0;
 KalmanVelocityEstimator kalman(1, 3);
+RollingAverage noAirBrakeDragCoef(100);
+RollingAverage airBrakeDragCoef(100);
 
 // everything related to timing
 void timeStuff()
@@ -179,40 +182,26 @@ void upwardLogic()
 float accelVelo = 0;
 float predAlt = 0;
 float error;
+float altitudeAccel = 0;
+int lastAirBrakeDeployTime = 0;
+int lastAirBrakeRetractTime = 0;
 void loop()
 {
   timeStuff();
   baroDataRead();
   altitudeProcessing(deltaT);
   getADXLData();
+  altitudeAccel = altitudeA580;//positive is upward and no gravity factored
+  double dragCoefficient = altitudeAccel/pow(altitudeV580,2);
+  
 #ifdef DEBUG
   delay(1000); // you only want a delay because serial printing is gets bogged down
 #endif
-  Serial.print(">");
-  Serial.print("BMP390: ");
-  Serial.print(altitude390,DATAPRECISION);
-  Serial.print(", ");
-
-  Serial.print("BMP580: ");
-  Serial.print(altitude580,DATAPRECISION);
-  Serial.print(", ");
-
-  Serial.print("BMP390Velo: ");
-  Serial.print(altitudeV390,DATAPRECISION);
-  Serial.print(", ");
-
-  Serial.print("Accel: ");
-  Serial.print(-9.8-yAccel,DATAPRECISION);
-  Serial.print(", ");
-
-  Serial.print("BMP580Velo: ");
-  Serial.print(altitudeV580,DATAPRECISION);
 
   // Serial.print(", ");
 
   // Serial.print("Delta T:");
   // Serial.print(deltaT);
-  Serial.println();
   // Serial.println("---------------------");
   // // get data stuff
   // Serial.println("Starting loop");
@@ -234,15 +223,13 @@ void loop()
   switch (flightState)
   {
   case 0: // happy data printing mode
+    #pragma region 
     // dataLogging();
-
     // accelVelo += (zAccel-9.8) * deltaT / 1000000;
     // error = altitude - predAlt;
     // accelVelo += error / deltaT*1000000 * 0.1;
     // predAlt = altitude + accelVelo *deltaT/1000000;
-
     // Serial.print(accelVelo);Serial.print(",");
-
     // Serial.print(altitudeV);Serial.print(",");
     // Serial.print(AccZ-9.8);Serial.print(",");
     // // Serial.print(String(AccX,DATAPRECISION));Serial.print(",");
@@ -251,69 +238,132 @@ void loop()
     // Serial.print(accelCali);Serial.print(",");
     // Serial.print(gyroCali);Serial.print(",");
     // Serial.print(magCali);Serial.print(",");
-
     // Serial.print(String(9.8-zAccel,DATAPRECISION));Serial.print(",");
-
     // Serial.println(deltaT);
+    Serial.print(">");
+    Serial.print("BMP390: ");
+    Serial.print(altitude390,DATAPRECISION);
+    Serial.print(", ");
+
+    Serial.print("BMP580: ");
+    Serial.print(altitude580,DATAPRECISION);
+    Serial.print(", ");
+
+    Serial.print("BMP390Velo: ");
+    Serial.print(altitudeV390,DATAPRECISION);
+    Serial.print(", ");
+
+    Serial.print("Accel: ");
+    Serial.print(-9.8-yAccel,DATAPRECISION);
+    Serial.print(", ");
+
+    Serial.print("BMP580Velo: ");
+    Serial.print(altitudeV580,DATAPRECISION);
+    Serial.println();
+    #pragma endregion
     break;
 
   case 1: // on the launch pad waiting to be ignited
     // do main rocket logic hereVVV
     Serial.println("waiting on launch pad");
 
-    // flight switching code_______________
-    if ((getAltitude() > 230))
+    // check if rocket is off the ground 
+    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    #pragma region 
+    if (getAltitude() > 10)
     { // tune these thresholds and statements
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
       { // tune this thresholds
-
         startTimeStamp = millis(); // start the flight timer here
-        deployChute();
-
         flightState++;
       }
     }
-
     else
     {
       flightStateAdvancementTrigger = 0;
     }
-    // switching code end__________________
+    #pragma endregion
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
     break;
   case 2: // flight
-    // dataLogging();
-    Serial.print(timeElapsed);
-    Serial.print(",");
-    Serial.println(startTimeStamp);
+    dataLogging();
 
-    if (getAltitude() < 10)
-    {
-      numberOfNegatives++;
-    }
-    else
-    {
-      numberOfNegatives = 0;
-    }
+    if (altitudeV580 >= 0.5){//rocket is going upward
+      if (altitudeAccel > 0){//rocket is being propelled by the motor
+        
+      }
+      else{//upward freefall this is where we do our rocket things
+        //bread and butter
 
-    if ((numberOfNegatives > 10)) // 100 sec timer
-    {
-      // flightState++;
-      undeployChute();
+        if ((dragFlapDeployed == false)&&(lastAirBrakeRetractTime < (millis()-DRAG_FLAP_ARM_TIME))){
+          noAirBrakeDragCoef.newData(dragCoefficient);
+        }
+        if ((dragFlapDeployed == true)&&(lastAirBrakeDeployTime < (millis()-DRAG_FLAP_ARM_TIME))){
+          airBrakeDragCoef.newData(dragCoefficient);
+        }
+
+        //safety vvv
+        if ((altitude580 > DESIRED_APOGEE)||(predictApogeeIdeal(altitude580,altitudeV580) > DESIRED_APOGEE)){
+          moveFlaps(100);
+        }
+        // ^^^
+
+        //the best part
+        else{ 
+          if (predictApogee(altitude580,altitudeV580,airBrakeDragCoef.getData()) >= DESIRED_APOGEE){
+            moveFlaps(100);
+          }
+          else{
+            moveFlaps(0);
+          }
+        }
+        }
+        
+        
+      }
+
+
+    //checking if rocket is past apogee
+    //============================================================
+    #pragma region 
+    if (altitudeV580 < 0.5){//rocket is going downwards
+      //checking if rocket going down
+      flightStateAdvancementTrigger++;
+      if (flightStateAdvancementTrigger > 10){
+        flightState ++;
+      }
     }
+    else{
+      flightStateAdvancementTrigger == 0;
+    }
+    #pragma endregion
+    //============================================================
     break;
-    // case 3:
-    //   dataLogging();
+  case 3:
+    downwardLogic();
+    //checking if rocket on the ground
+    //============================================================
+    #pragma region 
+    if (((altitudeV580 > -1)&&(altitudeV580 < 1))||(timeElapsed > 100000)){//on the ground or 100 sec has passed
+      timesTheRocketIsStill ++;
+    }
+    else{
+      timesTheRocketIsStill = 0;
+    }
+    if (timesTheRocketIsStill > 100){
+      flightState ++;
+    }
+    #pragma endregion
+    //============================================================
+  
 
-    //   if (altitude <.5){numberOfNegatives ++;}
-    //   else {numberOfNegatives = 0;}
-
-    //   if ((numberOfNegatives > 20))//100 sec timer
-    //   {
-    //     deployChute();
-    //   }
-    //   break;
-    // }
+    break;
+  case 4:
+    Serial.println("We done");
+    break; 
+    
   }
 }
 // wow looks like the code is super neat < 200 lines woaw

@@ -71,9 +71,11 @@
 // Servo deployment angles
 #define DRAG_FLAPS_DEPLOYED_ANGLE 45
 #define DRAG_FLAPS_UNDEPLOYED_ANGLE 135
+//in ms
+#define DRAG_FLAP_ARM_TIME 200
 #define PARACHUTE_DEPLOYED_ANGLE 170
 #define PARACHUTE_UNDEPLOYED_ANGLE 10
-
+#define MASS_WITH_EMPT
 // ============================================================================
 // DATA LOGGING
 // ============================================================================
