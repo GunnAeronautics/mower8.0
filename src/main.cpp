@@ -227,7 +227,7 @@ void loop()
   baroDataRead();
   altitudeProcessing(deltaT);
   getADXLData();
-  altitudeAccel = altitudeA580;//positive is upward and no gravity factored
+  altitudeAccel = yAccel;//positive is upward and no gravity factored
   dragCoefficient = altitudeAccel/pow(altitudeV580,2);
   
 #ifdef DEBUG
@@ -345,12 +345,12 @@ void loop()
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3){
         burnoutTimeStamp = millis();
-        flightStateAdvancementTrigger == 0;
+        flightStateAdvancementTrigger = 0;
         flightState ++;
       }
     }
     else{
-      flightStateAdvancementTrigger == 0;
+      flightStateAdvancementTrigger = 0;
     }
     #pragma endregion
     //============================================================
@@ -420,13 +420,13 @@ void loop()
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10){
         flightState ++;
-        flightStateAdvancementTrigger == 0;
+        flightStateAdvancementTrigger = 0;
         closeSD();
         openOpenSD();
       }
     }
     else{
-      flightStateAdvancementTrigger == 0;
+      flightStateAdvancementTrigger = 0;
     }
     #pragma endregion
     //============================================================
