@@ -42,13 +42,14 @@ void writeCSVLine(fs::FS &fs, const char *path, const char *message)
   }
   // file.close();
 }
-void openOpenSD(){
-  openSD(SD);
-}
 void openSD(fs::FS &fs){
   closed = true;
   file = fs.open(logFilename.c_str(), FILE_APPEND);
 
+}
+
+void openOpenSD(){
+  openSD(SD);
 }
 // void sdTask(void *parameter) {
 //   char *message = (char *)parameter;  
