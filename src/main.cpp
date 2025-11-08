@@ -293,19 +293,20 @@ void loop()
     Serial.print(altitudeV390,DATAPRECISION);
     Serial.print(", ");
 
-    Serial.print("Accel: ");
+    Serial.print("AccelZ: ");
     Serial.print(-9.8-yAccel,DATAPRECISION);
     Serial.print(", ");
 
     Serial.print("BMP580Velo: ");
     Serial.print(altitudeV580,DATAPRECISION);
-    Serial.println();
+    Serial.print(",");
 
     Serial.print("Accel: ");
     Serial.print(altitudeAccel,DATAPRECISION);
     Serial.println();
 
-    Serial.println(deltaT);
+
+    // Serial.println(deltaT);
     #pragma endregion
     break;
   
