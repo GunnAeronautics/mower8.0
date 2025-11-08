@@ -111,7 +111,7 @@ void writeDataHeader(){
   "predictApogee nobrakes,"
   "predictApogee brakes,"
   "drag coef,"
-  "parachute Deployed,"
+  "R Deployed,"
   "dragFlaps deployed,"
   "flight state,"
   "time still,"
@@ -206,7 +206,7 @@ void loop()
   baroDataRead();
   altitudeProcessing(deltaT);
   getADXLData();
-  altitudeAccel = yAccel;//positive is upward and no gravity factored
+  altitudeAccel = -yAccel;//positive is upward and no gravity factored
   dragCoefficient = abs(altitudeAccel/pow(altitudeV580,2));
   
 #ifdef DEBUG
