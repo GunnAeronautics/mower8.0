@@ -1,7 +1,7 @@
 #include "headers/utils/RollingAverage.h"
 
 
-
+int divideBy = 0;
 RollingAverage::RollingAverage(int rollLen){
     rollingLen = rollLen;//default
     dataIndex = 0;
@@ -29,5 +29,7 @@ float RollingAverage::getData(){
     if (divideBy == 0){//prevent divide by 0
       return 0;
     }
+    else{
     return average / divideBy;
+    }
   }

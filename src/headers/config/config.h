@@ -11,8 +11,8 @@
 // Servo Pins
 #define SERVO_K 26 // 1
 #define SERVO_L 25 // 2
-#define SERVO_M 35 // 3
-#define SERVO_N 34 // 4
+#define SERVO_M 4 // 3
+#define SERVO_N 18 // 4 120.60 41.4 37.9
 
 // BMP390/BMP580 Barometric Sensor Pins
 #define BMP_SCK 13 //clk // scl
@@ -65,17 +65,17 @@
 #define DESIRED_FLIGHT_TIME 42500     // milliseconds (41-44 sec regulation 2025)
 
 // Parachute and drag flap configuration
-#define PARACHUTE_TERM_VELOCITY 3.256 // m/s
+#define PARACHUTE_TERM_VELOCITY 6.5 // m/s
 #define COEF_DRAG_FLAPDEPLOYED 0.002213 // accelY / v / v of the rocket when flaps fully deployed
 
 // Servo deployment angles
-#define DRAG_FLAPS_DEPLOYED_ANGLE 45
-#define DRAG_FLAPS_UNDEPLOYED_ANGLE 135
+#define DRAG_FLAPS_DEPLOYED_ANGLE 180
+#define DRAG_FLAPS_UNDEPLOYED_ANGLE 0
 //in ms
-#define DRAG_FLAP_ARM_TIME 200
-#define PARACHUTE_DEPLOYED_ANGLE 170
-#define PARACHUTE_UNDEPLOYED_ANGLE 10
-#define MASS_WITH_EMPT
+#define DRAG_FLAP_ARM_TIME 300
+#define PARACHUTE_DEPLOYED_ANGLE 0
+#define PARACHUTE_UNDEPLOYED_ANGLE 180
+// #define 
 // ============================================================================
 // DATA LOGGING
 // ============================================================================

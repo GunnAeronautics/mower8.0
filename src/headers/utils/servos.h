@@ -8,6 +8,8 @@
 void deployChute();
 void moveFlaps(int power);
 void servoSetup();
+void openFlaps();
+void closeFlaps();
 void undeployChute();
 
 #endif // SERVOS_H
