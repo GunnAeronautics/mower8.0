@@ -43,8 +43,13 @@ void writeCSVLine(fs::FS &fs, const char *path, const char *message)
   // file.close();
 }
 void openSD(fs::FS &fs){
-  closed = true;
+  if (closed == true){
   file = fs.open(logFilename.c_str(), FILE_APPEND);
+  }
+  else{
+    Serial.println("already opened");
+  }
+  closed = false;
 
 }
 
