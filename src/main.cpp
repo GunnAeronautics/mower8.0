@@ -27,7 +27,11 @@
 unsigned long lastT;
 static int deltaT;
 unsigned long startTimeStamp = 0; // ms
+unsigned long burnoutTimeStamp = 0; // ms
+
 long timeElapsed = 0;             // time elapsed in flight (ms)
+long timeElapsedSinceBurnout = 0;             // time elapsed in flight (ms)
+
 int lastMovementT = 0;            // ms
 
 // Deployment states
@@ -36,7 +40,7 @@ bool parachuteDeployed = false;
 
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
+int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
 int numberOfNegatives = 0;
@@ -51,7 +55,7 @@ RollingAverage airBrakeDragCoef(100);
 // everything related to timing
 void timeStuff()
 {
-  while ((micros()-lastT) < 20000);
+  while ((micros()-lastT) < 10000);
   deltaT = micros() - lastT; // deltaT
   lastT = micros();
   // to set a timer for when the rocket launches
@@ -62,6 +66,13 @@ void timeStuff()
   else
   {
     timeElapsed = millis() - startTimeStamp;
+  }
+
+  if (flightState != 3){
+    timeElapsedSinceBurnout = 0;
+  }
+  else{
+    timeElapsedSinceBurnout = millis() - burnoutTimeStamp;
   }
 }
 
@@ -248,6 +259,10 @@ void loop()
   switch (flightState)
   {
   case 0: // happy data printing mode
+    // dataLogging();
+    if (altitude580 > 0.4){
+      closeSD();
+    }
     #pragma region 
     // dataLogging();
     // accelVelo += (zAccel-9.8) * deltaT / 1000000;
@@ -285,9 +300,15 @@ void loop()
     Serial.print("BMP580Velo: ");
     Serial.print(altitudeV580,DATAPRECISION);
     Serial.println();
+
+    Serial.print("Accel: ");
+    Serial.print(altitudeAccel,DATAPRECISION);
+    Serial.println();
+
+    Serial.println(deltaT);
     #pragma endregion
     break;
-
+  
   case 1: // on the launch pad waiting to be ignited
     // do main rocket logic hereVVV
     Serial.println("waiting on launch pad");
@@ -312,16 +333,42 @@ void loop()
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     break;
-  case 2: // flight
+  case 2:
+    dataLogging();
+
+    //checking if rocket's motor burned out
+    //============================================================
+    #pragma region 
+    if ((altitudeAccel < 0)||(altitudeV580 < 0.5)){//rocket is going downwards
+      //checking if rocket going down
+      flightStateAdvancementTrigger++;
+      if (flightStateAdvancementTrigger > 3){
+        burnoutTimeStamp = millis();
+        flightStateAdvancementTrigger == 0;
+        flightState ++;
+      }
+    }
+    else{
+      flightStateAdvancementTrigger == 0;
+    }
+    #pragma endregion
+    //============================================================
+
+    
+  case 3: // flight
     dataLogging();
 
     if (altitudeV580 >= 0.5){//rocket is going upward
-      if (altitudeAccel > 0){//rocket is being propelled by the motor
-        
-      }
-      else{//upward freefall this is where we do our rocket things
         //bread and butter
+          
+        if (timeElapsedSinceBurnout < 1000){
+          dragFlapDeployed = false;
+        }
+        else  if (timeElapsedSinceBurnout < 2000){
+          dragFlapDeployed = true;
+        }
 
+        else{
         if ((dragFlapDeployed == false)&&(lastAirBrakeRetractTime < (millis()-DRAG_FLAP_ARM_TIME))){
           noAirBrakeDragCoef.newData(dragCoefficient);
         }
@@ -358,9 +405,10 @@ void loop()
           }
         }
         }
-        
-        
       }
+        
+        
+      
 
 
     //checking if rocket is past apogee
@@ -371,6 +419,9 @@ void loop()
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10){
         flightState ++;
+        flightStateAdvancementTrigger == 0;
+        closeSD();
+        openOpenSD();
       }
     }
     else{
@@ -379,7 +430,7 @@ void loop()
     #pragma endregion
     //============================================================
     break;
-  case 3:
+  case 4:
     dataLogging();
 
     downwardLogic();
@@ -393,7 +444,7 @@ void loop()
     else{
       timesTheRocketIsStill = 0;
     }
-    if (timesTheRocketIsStill > 100){
+    if (timesTheRocketIsStill > 30){
       flightState ++;
     }
     #pragma endregion
@@ -401,7 +452,7 @@ void loop()
   
 
     break;
-  case 4:
+  case 5:
     Serial.println("We done");
     break; 
     
