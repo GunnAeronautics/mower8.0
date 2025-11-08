@@ -21,15 +21,15 @@ int angleToBlink(double power){// scale of 0 to 90
   }
 
 void deployChute(){
-    servo1.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
+    servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
   }
 void undeployChute(){
-    servo1.write(PARACHUTE_DEPLOYED_ANGLE);
+    servo4.write(PARACHUTE_DEPLOYED_ANGLE);
 }
 void moveFlaps(int power){
     servo2.write(angleToBlink(power));
     servo3.write(angleToBlink(power));
-    servo4.write(angleToBlink(power));  
+    // servo4.write(angleToBlink(power));  
 }
 void servoSetup(){
     servo1.attach(SERVO1_PIN);
@@ -44,7 +44,7 @@ void servoSetup(){
     {
       servo2.write(i);
       servo3.write(i);
-      servo4.write(i);
+      // servo4.write(i);
   
       delay(10);
     }
@@ -52,14 +52,14 @@ void servoSetup(){
     {
       servo2.write(i);
       servo3.write(i);
-      servo4.write(i);
+      // servo4.write(i);
       delay(10);
     }
-    servo1.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
+    servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
 
     servo2.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
     servo3.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
-    servo4.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
+    // servo4.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
 
     Serial.println("Servo Test Done");
 
@@ -67,10 +67,10 @@ void servoSetup(){
 void openFlaps(){
     servo2.write(DRAG_FLAPS_DEPLOYED_ANGLE);
     servo3.write(DRAG_FLAPS_DEPLOYED_ANGLE);
-    servo4.write(DRAG_FLAPS_DEPLOYED_ANGLE);  
+    // servo4.write(DRAG_FLAPS_DEPLOYED_ANGLE);  
 }
 void closeFlaps(){
     servo2.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
     servo3.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
-    servo4.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);  
+    // servo4.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);  
 }

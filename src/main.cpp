@@ -68,7 +68,7 @@ void timeStuff()
     timeElapsed = millis() - startTimeStamp;
   }
 
-  if (flightState >= 3){
+  if (flightState < 3){
     timeElapsedSinceBurnout = 0;
   }
   else{
@@ -89,6 +89,19 @@ float coefOfDrag(float accel, float v)
   float coef = abs(accel / v / v);
   return coef;
 }
+void openOpenFlap(){
+  dragFlapDeployed = true;
+  closeSD();
+  openOpenSD();
+  openFlaps();
+}
+void closeCloseFlap(){
+  dragFlapDeployed = false;
+  closeSD();
+  openOpenSD();
+  closeFlaps();
+}
+
 void writeDataHeader(){
   String datalogHeader = 
   "timeElapsed,"
@@ -150,15 +163,21 @@ void setup()
   lastAltitudeBuiltIn = getAltitude();
 
   sdSetup();
+  openOpenSD();
   writeDataHeader();
+  closeSD();
   servoSetup();
-
+  openOpenSD();
   lastT = micros();
   Serial.println("start");
 
   pinMode(2, OUTPUT); // blue LED
   digitalWrite(2, HIGH);
+  delay(1000);
+  openOpenFlap();
 
+  delay(1000);
+  closeCloseFlap();
   delay(5000);
 }
 
@@ -175,64 +194,11 @@ void downwardLogic()
     parachuteDeployed = true;
   }
 }
-// void upwardLogic()
-// {
-//   if (lastMovementT + 400 < millis())
-//   {
-//     if ((predictApogeeIdeal(getAltitude(), getAltitudeVelocity()) < DESIRED_APOGEE))
-//     { // cooked
-//       moveFlaps(0);
-//       dragFlapDeployed = false;
-//     }
-//     else
-//     {
-//       if (getAltitude() > DESIRED_APOGEE)
-//       { // cooked
-//         moveFlaps(90);
-//         dragFlapDeployed = true;
-//       }
-//       if ((AccY < 0) && (AccY > -10))
-//       { // then u are inside of the freefall upward
-//         if (predictApogee(getAltitude(), getAltitudeVelocity(), coefOfDrag(zAccel, getAltitudeVelocity())) > DESIRED_APOGEE)
-//         {
-//           flapDeploymentTrigger++;
-//         }
-//         else
-//         {
-//           flapDeploymentTrigger = 0;
-//         }
-//       }
-//       if (flapDeploymentTrigger >= 3)
-//       {
-//         moveFlaps(90);
-//         dragFlapDeployed = true;
-//         lastMovementT = millis();
-//       }
-//       else
-//       {
-//         moveFlaps(0);
-//         dragFlapDeployed = false;
-//       }
-//     }
-//   }
-// }
 float accelVelo = 0;
 float predAlt = 0;
 float error;
 int lastAirBrakeDeployTime = 0;
 int lastAirBrakeRetractTime = 0;
-void openOpenFlap(){
-  dragFlapDeployed = true;
-  closeSD();
-  openOpenSD();
-  openFlaps();
-}
-void closeCloseFlap(){
-  dragFlapDeployed = false;
-  closeSD();
-  openOpenSD();
-  closeFlaps();
-}
 
 void loop()
 {
@@ -344,7 +310,7 @@ void loop()
           
           closeCloseFlap();
         }
-        else  if (timeElapsedSinceBurnout < 2000){
+        else if (timeElapsedSinceBurnout < 2000){
           openOpenFlap();
         }
 
@@ -404,9 +370,11 @@ void loop()
     //============================================================
     break;
   case 4:
+    closeSD();
     openOpenSD();
     dataLogging();
-    closeSD();
+
+    closeCloseFlap();
 
     downwardLogic();
     
@@ -428,6 +396,8 @@ void loop()
 
     break;
   case 5:
+    closeSD();
+
     Serial.println("We done");
     break; 
     

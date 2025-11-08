@@ -101,8 +101,8 @@ void sdSetup()
   logFilename = getNewLogFilename();
   Serial.println(logFilename);
 
-  openSD(SD);
-  writeCSVLine(SD, logFilename.c_str(), datalogHeader.c_str());
+  // openSD(SD);
+  // writeCSVLine(SD, logFilename.c_str(), datalogHeader.c_str());
 
 
   // xQueue = xQueueCreate(10,MAX_STRING_SIZE);//~300 bytes per line

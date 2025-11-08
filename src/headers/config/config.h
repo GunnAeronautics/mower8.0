@@ -72,9 +72,9 @@
 #define DRAG_FLAPS_DEPLOYED_ANGLE 180
 #define DRAG_FLAPS_UNDEPLOYED_ANGLE 0
 //in ms
-#define DRAG_FLAP_ARM_TIME 300
-#define PARACHUTE_DEPLOYED_ANGLE 0
-#define PARACHUTE_UNDEPLOYED_ANGLE 180
+#define DRAG_FLAP_ARM_TIME 500
+#define PARACHUTE_DEPLOYED_ANGLE 180
+#define PARACHUTE_UNDEPLOYED_ANGLE 0
 // #define 
 // ============================================================================
 // DATA LOGGING
