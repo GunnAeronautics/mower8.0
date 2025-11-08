@@ -12,5 +12,6 @@ String getNewLogFilename();
 void writeCSVLine(fs::FS &fs, const char *path, const char *message);
 void sdTask(void *parameter);
 void logData(String dataString);
-
+void closeSD();
+void openOpenSD();
 #endif // SDCARD_H

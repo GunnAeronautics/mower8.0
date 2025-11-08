@@ -8,7 +8,9 @@ SPIClass vspi(VSPI);
 // QueueHandle_t xQueue;
 volatile int howManyDatas = 0;
 bool lastLED = true;
+bool closed = false;
 
+File file;
 String getNewLogFilename(){
   int fileIndex = 1;
   String filename;
@@ -23,7 +25,6 @@ String getNewLogFilename(){
 void writeCSVLine(fs::FS &fs, const char *path, const char *message)
 {
   //Serial.printf("Appending to file: %s\n", path);
-  File file = fs.open(path, FILE_APPEND);
   if (!file)
   {
     //Serial.println("Failed to open file for appending");
@@ -39,9 +40,16 @@ void writeCSVLine(fs::FS &fs, const char *path, const char *message)
   {
     Serial.println("Append failed");
   }
-  file.close();
+  // file.close();
 }
+void openOpenSD(){
+  openSD(SD);
+}
+void openSD(fs::FS &fs){
+  closed = true;
+  file = fs.open(logFilename.c_str(), FILE_APPEND);
 
+}
 // void sdTask(void *parameter) {
 //   char *message = (char *)parameter;  
 //   writeCSVLine(SD, logFilename.c_str(), message);
@@ -87,6 +95,7 @@ void sdSetup()
   logFilename = getNewLogFilename();
   Serial.println(logFilename);
 
+  openSD(SD);
   writeCSVLine(SD, logFilename.c_str(), datalogHeader.c_str());
 
 
@@ -97,8 +106,17 @@ void sdSetup()
   //writeCSVLine(SD, logFilename.c_str(), "Time, Baro");
 }
 
+void closeSD(){
+  if (closed == false){
+    file.close();
+    Serial.println("CLOSED!!!");
+  }
+  else{
+    Serial.println("Already Closed!");
+  }
+  closed = true;
 
-
+}
 void logData(String dataString)
 {
   //Serial.println("Logging Data");
