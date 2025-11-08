@@ -8,7 +8,7 @@ SPIClass vspi(VSPI);
 // QueueHandle_t xQueue;
 volatile int howManyDatas = 0;
 bool lastLED = true;
-bool closed = false;
+bool closed = true;
 
 File file;
 String getNewLogFilename(){
@@ -97,7 +97,7 @@ void sdSetup()
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
-
+  openSD(SD);
   logFilename = getNewLogFilename();
   Serial.println(logFilename);
 

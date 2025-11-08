@@ -163,11 +163,11 @@ void setup()
   lastAltitudeBuiltIn = getAltitude();
 
   sdSetup();
-  openOpenSD();
   writeDataHeader();
   closeSD();
-  servoSetup();
   openOpenSD();
+
+  servoSetup();
   lastT = micros();
   Serial.println("start");
 
@@ -197,8 +197,8 @@ void downwardLogic()
 float accelVelo = 0;
 float predAlt = 0;
 float error;
-int lastAirBrakeDeployTime = 0;
-int lastAirBrakeRetractTime = 0;
+unsigned long lastAirBrakeDeployTime = 0;
+unsigned long lastAirBrakeRetractTime = 0;
 
 void loop()
 {
@@ -207,7 +207,7 @@ void loop()
   altitudeProcessing(deltaT);
   getADXLData();
   altitudeAccel = yAccel;//positive is upward and no gravity factored
-  dragCoefficient = altitudeAccel/pow(altitudeV580,2);
+  dragCoefficient = abs(altitudeAccel/pow(altitudeV580,2));
   
 #ifdef DEBUG
   delay(1000); // you only want a delay because serial printing is gets bogged down
@@ -261,7 +261,7 @@ void loop()
     // check if rocket is off the ground 
     // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     #pragma region 
-    if (altitude580 > 5)
+    if (altitude580 > 10)
     { // tune these thresholds and statements
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
@@ -289,6 +289,8 @@ void loop()
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3){
         burnoutTimeStamp = millis();
+        lastAirBrakeRetractTime = millis();
+
         flightStateAdvancementTrigger = 0;
         flightState ++;
       }
@@ -309,6 +311,7 @@ void loop()
         if (timeElapsedSinceBurnout < 1000){
           
           closeCloseFlap();
+          lastAirBrakeDeployTime = millis();
         }
         else if (timeElapsedSinceBurnout < 2000){
           openOpenFlap();
