@@ -40,7 +40,7 @@ bool parachuteDeployed = false;
 
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
 int numberOfNegatives = 0;
@@ -68,7 +68,7 @@ void timeStuff()
     timeElapsed = millis() - startTimeStamp;
   }
 
-  if (flightState != 3){
+  if (flightState >= 3){
     timeElapsedSinceBurnout = 0;
   }
   else{
@@ -121,7 +121,7 @@ void dataLogging()
                       String(predictApogee(altitude580, altitudeV580, noAirBrakeDragCoef.getData()), DATAPRECISION) + ',' + // apogee prediction
                       String(predictApogee(altitude580, altitudeV580, airBrakeDragCoef.getData()), DATAPRECISION) + ',' + // apogee prediction
 
-                      String(dragCoefficient) + ',' +
+                      String(dragCoefficient, DATAPRECISION) + ',' +
                       (String)parachuteDeployed + ',' +
                       (String)dragFlapDeployed + ',' +
                       (String)flightState + ',' +
@@ -175,52 +175,65 @@ void downwardLogic()
     parachuteDeployed = true;
   }
 }
-void upwardLogic()
-{
-  if (lastMovementT + 400 < millis())
-  {
-    if ((predictApogeeIdeal(getAltitude(), getAltitudeVelocity()) < DESIRED_APOGEE))
-    { // cooked
-      moveFlaps(0);
-      dragFlapDeployed = false;
-    }
-    else
-    {
-      if (getAltitude() > DESIRED_APOGEE)
-      { // cooked
-        moveFlaps(90);
-        dragFlapDeployed = true;
-      }
-      if ((AccY < 0) && (AccY > -10))
-      { // then u are inside of the freefall upward
-        if (predictApogee(getAltitude(), getAltitudeVelocity(), coefOfDrag(zAccel, getAltitudeVelocity())) > DESIRED_APOGEE)
-        {
-          flapDeploymentTrigger++;
-        }
-        else
-        {
-          flapDeploymentTrigger = 0;
-        }
-      }
-      if (flapDeploymentTrigger >= 3)
-      {
-        moveFlaps(90);
-        dragFlapDeployed = true;
-        lastMovementT = millis();
-      }
-      else
-      {
-        moveFlaps(0);
-        dragFlapDeployed = false;
-      }
-    }
-  }
-}
+// void upwardLogic()
+// {
+//   if (lastMovementT + 400 < millis())
+//   {
+//     if ((predictApogeeIdeal(getAltitude(), getAltitudeVelocity()) < DESIRED_APOGEE))
+//     { // cooked
+//       moveFlaps(0);
+//       dragFlapDeployed = false;
+//     }
+//     else
+//     {
+//       if (getAltitude() > DESIRED_APOGEE)
+//       { // cooked
+//         moveFlaps(90);
+//         dragFlapDeployed = true;
+//       }
+//       if ((AccY < 0) && (AccY > -10))
+//       { // then u are inside of the freefall upward
+//         if (predictApogee(getAltitude(), getAltitudeVelocity(), coefOfDrag(zAccel, getAltitudeVelocity())) > DESIRED_APOGEE)
+//         {
+//           flapDeploymentTrigger++;
+//         }
+//         else
+//         {
+//           flapDeploymentTrigger = 0;
+//         }
+//       }
+//       if (flapDeploymentTrigger >= 3)
+//       {
+//         moveFlaps(90);
+//         dragFlapDeployed = true;
+//         lastMovementT = millis();
+//       }
+//       else
+//       {
+//         moveFlaps(0);
+//         dragFlapDeployed = false;
+//       }
+//     }
+//   }
+// }
 float accelVelo = 0;
 float predAlt = 0;
 float error;
 int lastAirBrakeDeployTime = 0;
 int lastAirBrakeRetractTime = 0;
+void openOpenFlap(){
+  dragFlapDeployed = true;
+  closeSD();
+  openOpenSD();
+  openFlaps();
+}
+void closeCloseFlap(){
+  dragFlapDeployed = false;
+  closeSD();
+  openOpenSD();
+  closeFlaps();
+}
+
 void loop()
 {
   timeStuff();
@@ -234,27 +247,6 @@ void loop()
   delay(1000); // you only want a delay because serial printing is gets bogged down
 #endif
 
-  // Serial.print(", ");
-
-  // Serial.print("Delta T:");
-  // Serial.print(deltaT);
-  // Serial.println("---------------------");
-  // // get data stuff
-  // Serial.println("Starting loop");
-  // Serial.println("Time Elapsed: " + String(timeElapsed));
-  // Serial.println("Delta T: " + String(deltaT));
-  // Serial.println("Main BARO ALT: " + String(getAltitude()));
-
-  // Serial.println("BMP580 temp and pressure: " + String(getBaroData_BMP580_temp()) +
-  //                ", " + String(getBaroData_BMP580_pressure()));
-  // Serial.println("BMP390 temp and pressure: " + String(getBaroData_BMP390_temp()) +
-  //                ", " + String(getBaroData_BMP390_pressure()));
-
-  // Serial.println();
-  // Serial.println("altitudeProcessing");
-  // IMUdata(deltaT);
-
-  // Serial.println(getAltitude());
   // main control things
   switch (flightState)
   {
@@ -265,21 +257,7 @@ void loop()
     }
     #pragma region 
     // dataLogging();
-    // accelVelo += (zAccel-9.8) * deltaT / 1000000;
-    // error = altitude - predAlt;
-    // accelVelo += error / deltaT*1000000 * 0.1;
-    // predAlt = altitude + accelVelo *deltaT/1000000;
-    // Serial.print(accelVelo);Serial.print(",");
-    // Serial.print(altitudeV);Serial.print(",");
-    // Serial.print(AccZ-9.8);Serial.print(",");
-    // // Serial.print(String(AccX,DATAPRECISION));Serial.print(",");
-    // // Serial.print(String(AccY,DATAPRECISION));Serial.print(",");
-    // Serial.print(systemCali);Serial.print(",");
-    // Serial.print(accelCali);Serial.print(",");
-    // Serial.print(gyroCali);Serial.print(",");
-    // Serial.print(magCali);Serial.print(",");
-    // Serial.print(String(9.8-zAccel,DATAPRECISION));Serial.print(",");
-    // Serial.println(deltaT);
+
     Serial.print(">");
     Serial.print("BMP390: ");
     Serial.print(altitude390,DATAPRECISION);
@@ -317,7 +295,7 @@ void loop()
     // check if rocket is off the ground 
     // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     #pragma region 
-    if (getAltitude() > 10)
+    if (altitude580 > 5)
     { // tune these thresholds and statements
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
@@ -363,13 +341,36 @@ void loop()
         //bread and butter
           
         if (timeElapsedSinceBurnout < 1000){
-          dragFlapDeployed = false;
+          
+          closeCloseFlap();
         }
         else  if (timeElapsedSinceBurnout < 2000){
-          dragFlapDeployed = true;
+          openOpenFlap();
         }
 
         else{
+
+        //safety vvv
+        if ((altitude580 > DESIRED_APOGEE)){
+          openOpenFlap();
+        }
+        // ^^^
+        //cooked saftey
+        if (predictApogeeIdeal(altitude580,altitudeV580) < DESIRED_APOGEE){
+          closeCloseFlap();
+        }
+
+        //the best part
+        else{ 
+          if (predictApogee(altitude580,altitudeV580,airBrakeDragCoef.getData()) >= DESIRED_APOGEE){
+            //moveFlaps(100);
+            openOpenFlap();
+          }
+          else{
+            closeCloseFlap();
+          }
+        }
+        }
         if ((dragFlapDeployed == false)&&(lastAirBrakeRetractTime < (millis()-DRAG_FLAP_ARM_TIME))){
           noAirBrakeDragCoef.newData(dragCoefficient);
         }
@@ -377,35 +378,6 @@ void loop()
           airBrakeDragCoef.newData(dragCoefficient);
         }
 
-        //safety vvv
-        if ((altitude580 > DESIRED_APOGEE)){
-          //moveFlaps(100);
-          dragFlapDeployed = true;
-          lastAirBrakeDeployTime = millis();
-        }
-        // ^^^
-        //cooked saftey
-        if (predictApogeeIdeal(altitude580,altitudeV580) < DESIRED_APOGEE){
-          dragFlapDeployed = false;
-          lastAirBrakeRetractTime = millis();
-        }
-
-        //the best part
-        else{ 
-          if (predictApogee(altitude580,altitudeV580,airBrakeDragCoef.getData()) >= DESIRED_APOGEE){
-            //moveFlaps(100);
-            dragFlapDeployed = true;
-            lastAirBrakeDeployTime = millis();
-
-          }
-          else{
-            //moveFlaps(0);
-            dragFlapDeployed = false;
-            lastAirBrakeRetractTime = millis();
-
-          }
-        }
-        }
       }
         
         
@@ -415,7 +387,7 @@ void loop()
     //checking if rocket is past apogee
     //============================================================
     #pragma region 
-    if (altitudeV580 < 0.5){//rocket is going downwards
+    if ((altitudeV580 < 0.5)){//rocket is going downwards
       //checking if rocket going down
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10){
@@ -432,7 +404,9 @@ void loop()
     //============================================================
     break;
   case 4:
+    openOpenSD();
     dataLogging();
+    closeSD();
 
     downwardLogic();
     

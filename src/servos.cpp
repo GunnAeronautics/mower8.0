@@ -7,11 +7,10 @@ float maxServo1 = 100;
 #define SERVO1_PIN SERVO_K //13 // 45 is unarmed, 135 is release parachute
 #define SERVO2_PIN SERVO_L //27
 #define SERVO3_PIN SERVO_M //26
-#define SERVO4_PIN SERVO_N //25
+#define SERVO4_PIN SERVO_N //34
 
-#define MIN_FLAP_STATE 0  // angle for minimum flap
-#define MAX_FLAP_STATE 90 // angle for max flaps
-
+// #define MIN_FLAP_STATE 0  // angle for minimum flap
+// #define MAX_FLAP_STATE 90 // angle for max flaps
 Servo servo1; // create servo
 Servo servo2; // create servo
 Servo servo3; // create servo
@@ -22,10 +21,10 @@ int angleToBlink(double power){// scale of 0 to 90
   }
 
 void deployChute(){
-    servo1.write(170);//for drag flaps
+    servo1.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
   }
 void undeployChute(){
-    servo1.write(10);
+    servo1.write(PARACHUTE_DEPLOYED_ANGLE);
 }
 void moveFlaps(int power){
     servo2.write(angleToBlink(power));
@@ -41,7 +40,7 @@ void servoSetup(){
     Serial.println("Servo Attached");
 
 
-    for (int i = 45; i < 135; i++)
+    for (int i = 0; i < 180; i++)
     {
       servo2.write(i);
       servo3.write(i);
@@ -49,19 +48,29 @@ void servoSetup(){
   
       delay(10);
     }
-    for (int i = 135; i > 45; i--)
+    for (int i = 180; i > 0; i--)
     {
       servo2.write(i);
       servo3.write(i);
       servo4.write(i);
       delay(10);
     }
-    servo1.write(10);//for drag flaps
+    servo1.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
 
-    servo2.write(angleToBlink(0));
-    servo3.write(angleToBlink(0));
-    servo4.write(angleToBlink(0));
+    servo2.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
+    servo3.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
+    servo4.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
 
     Serial.println("Servo Test Done");
 
+}
+void openFlaps(){
+    servo2.write(DRAG_FLAPS_DEPLOYED_ANGLE);
+    servo3.write(DRAG_FLAPS_DEPLOYED_ANGLE);
+    servo4.write(DRAG_FLAPS_DEPLOYED_ANGLE);  
+}
+void closeFlaps(){
+    servo2.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
+    servo3.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
+    servo4.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);  
 }
