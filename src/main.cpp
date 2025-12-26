@@ -213,23 +213,6 @@ float predAlt = 0;
 float error;
 unsigned long lastAirBrakeDeployTime = 0;
 unsigned long lastAirBrakeRetractTime = 0;
-
-void loop()
-{
-  timeStuff();
-  baroDataRead();
-  altitudeProcessing(deltaT);
-  getADXLData();
-  altitudeAccel = -yAccel;//positive is upward and no gravity factored
-  dragCoefficient = abs(altitudeAccel/pow(altitudeV580,2));
-  
-#ifdef DEBUG
-  delay(1000); // you only want a delay because serial printing is gets bogged down
-#endif
-
-unsigned long lastAirBrakeDeployTime = 0;
-unsigned long lastAirBrakeRetractTime = 0;
-
 void loop() {
   timeStuff();
   baroDataRead();
