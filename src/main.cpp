@@ -9,15 +9,15 @@
 #include "headers/config/config.h"
 
 // Homebrew libraries:
+#include "headers/math/KalmanVelocityEstimator.h"
+#include "headers/sensors/adxl.h"
 #include "headers/sensors/bmpxxx.h"
 #include "headers/sensors/imu.h"
-#include "headers/sensors/adxl.h"
 #include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
-#include "headers/math/KalmanVelocityEstimator.h"
 
-// Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or ur gonna have to do ts again
-// Servo deployment angles configured in config.h:
+// Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
+// ur gonna have to do ts again Servo deployment angles configured in config.h:
 //   - Drag flaps deployed: 45°
 //   - Drag flaps undeployed: 135°
 //   - Parachute deployed: 170°
@@ -48,6 +48,10 @@ int timesTheRocketIsStill = 0;
 float altitudeAccel = 0;
 double dragCoefficient = 0;
 
+int timesTheRocketIsStill = 0;
+float altitudeAccel = 0;
+double dragCoefficient = 0;
+
 KalmanVelocityEstimator kalman(1, 3);
 RollingAverage noAirBrakeDragCoef(100);
 RollingAverage airBrakeDragCoef(100);
@@ -59,12 +63,9 @@ void timeStuff()
   deltaT = micros() - lastT; // deltaT
   lastT = micros();
   // to set a timer for when the rocket launches
-  if ((startTimeStamp == 0) && (flightState != 0))
-  {
+  if ((startTimeStamp == 0) && (flightState != 0)) {
     timeElapsed = 0;
-  }
-  else
-  {
+  } else {
     timeElapsed = millis() - startTimeStamp;
   }
 
@@ -76,16 +77,14 @@ void timeStuff()
   }
 }
 
-float predictApogee(float alt, float v, float dragCoef)
-{
-  return alt + log((dragCoef * v * v / 9.81) + 1) / (2.0 * dragCoef); // copied from mower6.0
+float predictApogee(float alt, float v, float dragCoef) {
+  return alt + log((dragCoef * v * v / 9.81) + 1) /
+                   (2.0 * dragCoef);  // copied from mower6.0
 }
-float predictApogeeIdeal(float alt, float v)
-{
+float predictApogeeIdeal(float alt, float v) {
   return alt + pow(v, 2) / 2. / GRAVITY;
 }
-float coefOfDrag(float accel, float v)
-{
+float coefOfDrag(float accel, float v) {
   float coef = abs(accel / v / v);
   return coef;
 }
@@ -129,31 +128,32 @@ void writeDataHeader(){
 void dataLogging()
 {
   BaroData baro = getBaroData();
-  String dataString = String(timeElapsed) + ',' +                                                                                   // rocket flight time
-                      String(getBaroData_BMP390_pressure(), DATAPRECISION) + ',' +  
-                      String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' +                                                                  // pressure
-                      String(altitude580, DATAPRECISION) + ',' +                                                                  // alt
-                      String(altitude390, DATAPRECISION) + ',' +                                                                  // alt
-                      String(altitudeV580, DATAPRECISION) + ',' +                                                                 // velocity - baro derived
-                      String(altitudeAccel, DATAPRECISION) + ',' +                                                                         // global axis
+  String dataString =
+      String(timeElapsed) +
+      ',' +  // rocket flight time
+             // String(pressure, DATAPRECISION) + ',' + // pressure
+      String(altitude580, DATAPRECISION) + ',' +    // alt
+      String(altitudeV580, DATAPRECISION) + ',' +   // velocity - baro derived
+      String(altitudeAccel, DATAPRECISION) + ',' +  // global axis
+      // String(AccY, DATAPRECISION) + ',' + // local axis String(zenith,
+      // DATAPRECISION) + ',' + // angle from the vertical
+      String(predictApogee(altitude580, altitudeV580,
+                           noAirBrakeDragCoef.getData()),
+             DATAPRECISION) +
+      ',' +  // apogee prediction
+      String(
+          predictApogee(altitude580, altitudeV580, airBrakeDragCoef.getData()),
+          DATAPRECISION) +
+      ',' +  // apogee prediction
 
-                      // String(AccY, DATAPRECISION) + ',' +                                                                           // local axis
-                      // String(zenith, DATAPRECISION) + ',' +                                                                         // angle from the vertical
-                      String(predictApogee(altitude580, altitudeV580, noAirBrakeDragCoef.getData()), DATAPRECISION) + ',' + // apogee prediction
-                      String(predictApogee(altitude580, altitudeV580, airBrakeDragCoef.getData()), DATAPRECISION) + ',' + // apogee prediction
+      String(dragCoefficient, DATAPRECISION) + ',' + (String)parachuteDeployed +
+      ',' + (String)dragFlapDeployed + ',' + (String)flightState + ',' +
+      (String)timesTheRocketIsStill + ',' +
 
-                      String(dragCoefficient, DATAPRECISION) + ',' +
-                      (String)parachuteDeployed + ',' +
-                      (String)dragFlapDeployed + ',' +
-                      (String)flightState + ',' +
-                      (String)timesTheRocketIsStill + ',' +
-
-                      "\n";
+      "\n";
   logData(dataString);
 }
-void setup()
-{
-
+void setup() {
   Serial.begin(115200);
   Serial.println("Serial Begin");
 
@@ -174,31 +174,36 @@ void setup()
   writeDataHeader();
   closeSD();
   openOpenSD();
+  writeDataHeader();
+  closeSD();
+  openOpenSD();
 
   servoSetup();
   lastT = micros();
   Serial.println("start");
 
-  pinMode(2, OUTPUT); // blue LED
+  pinMode(2, OUTPUT);  // blue LED
   digitalWrite(2, HIGH);
   delay(1000);
   openOpenFlap();
+  delay(1000);
+  openOpenFlap();
 
+  delay(1000);
+  closeCloseFlap();
   delay(1000);
   closeCloseFlap();
   delay(5000);
   delay(18000);
 }
 
-void downwardLogic()
-{
-  if (((float(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY) > getAltitude())
-  { // main logic works!!!
+void downwardLogic() {
+  if (((float(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) *
+       PARACHUTE_TERM_VELOCITY) > getAltitude()) {  // main logic works!!!
     deployChute();
     parachuteDeployed = true;
   }
-  if (getAltitude() < 20.)
-  { // saftey (falling down and altitude less than 20)
+  if (getAltitude() < 20.) {  // saftey (falling down and altitude less than 20)
     deployChute();
     parachuteDeployed = true;
   }
@@ -220,6 +225,22 @@ void loop()
   
 #ifdef DEBUG
   delay(1000); // you only want a delay because serial printing is gets bogged down
+#endif
+
+unsigned long lastAirBrakeDeployTime = 0;
+unsigned long lastAirBrakeRetractTime = 0;
+
+void loop() {
+  timeStuff();
+  baroDataRead();
+  altitudeProcessing(deltaT);
+  getADXLData();
+  altitudeAccel = -yAccel;  // positive is upward and no gravity factored
+  dragCoefficient = abs(altitudeAccel / pow(altitudeV580, 2));
+
+#ifdef DEBUG
+  delay(1000);  // you only want a delay because serial printing is gets bogged
+                // down
 #endif
 
   // main control things
@@ -262,13 +283,13 @@ void loop()
     Serial.println();
 
 
-    // Serial.println(deltaT);
-    #pragma endregion
-    break;
-  
-  case 1: // on the launch pad waiting to be ignited
-    // do main rocket logic hereVVV
-    Serial.println("waiting on launch pad");
+// Serial.println(deltaT);
+#pragma endregion
+      break;
+
+    case 1:  // on the launch pad waiting to be ignited
+      // do main rocket logic hereVVV
+      Serial.println("waiting on launch pad");
 
     // check if rocket is off the ground 
     // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
