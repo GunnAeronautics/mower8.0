@@ -40,7 +40,7 @@ bool parachuteDeployed = false;
 
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
+int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
 int numberOfNegatives = 0;
@@ -105,7 +105,12 @@ void closeCloseFlap(){
 void writeDataHeader(){
   String datalogHeader = 
   "timeElapsed,"
+  "pres390,"
+  "pres580,"
+
   "alt,"
+  "alt390,"
+
   "altV,"
   "altA,"
   "predictApogee nobrakes,"
@@ -125,10 +130,13 @@ void dataLogging()
 {
   BaroData baro = getBaroData();
   String dataString = String(timeElapsed) + ',' +                                                                                   // rocket flight time
-                      // String(pressure, DATAPRECISION) + ',' +                                                                  // pressure
+                      String(getBaroData_BMP390_pressure(), DATAPRECISION) + ',' +  
+                      String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' +                                                                  // pressure
                       String(altitude580, DATAPRECISION) + ',' +                                                                  // alt
+                      String(altitude390, DATAPRECISION) + ',' +                                                                  // alt
                       String(altitudeV580, DATAPRECISION) + ',' +                                                                 // velocity - baro derived
                       String(altitudeAccel, DATAPRECISION) + ',' +                                                                         // global axis
+
                       // String(AccY, DATAPRECISION) + ',' +                                                                           // local axis
                       // String(zenith, DATAPRECISION) + ',' +                                                                         // angle from the vertical
                       String(predictApogee(altitude580, altitudeV580, noAirBrakeDragCoef.getData()), DATAPRECISION) + ',' + // apogee prediction
@@ -179,6 +187,7 @@ void setup()
   delay(1000);
   closeCloseFlap();
   delay(5000);
+  delay(18000);
 }
 
 void downwardLogic()
@@ -218,12 +227,15 @@ void loop()
   {
   case 0: // happy data printing mode
     // dataLogging();
-    if (altitude580 > 0.4){
-      closeSD();
-    }
+    // if (altitude580 > 0.4){
+    //   closeSD();
+    // }
     #pragma region 
     // dataLogging();
-
+    //
+    dataLogging();
+    closeSD();
+    openOpenSD();
     Serial.print(">");
     Serial.print("BMP390: ");
     Serial.print(altitude390,DATAPRECISION);
