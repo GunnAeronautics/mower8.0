@@ -39,5 +39,6 @@ float axisComponent(Quaternion orientation, float x, float y, float z, String di
 float angleBetweenAxis(Quaternion orientation, String dir);
 float radiansToDegrees(float angle);
 float degreesToRadians(float angle);
+Quaternion getQuat();
 
 #endif // IMU_H

@@ -1,3 +1,5 @@
+
+
 // Sup guys this is Tony the main programmer on the ASTRA24-25 tarc team
 // make sure to use camelCase for variables and functions
 // use ALLCAPS and UNDER_SCORES for definitions
@@ -55,7 +57,7 @@ RollingAverage airBrakeDragCoef(100);
 // everything related to timing
 void timeStuff()
 {
-  while ((micros()-lastT) < 10000);
+  // while ((micros()-lastT) < 10000);
   deltaT = micros() - lastT; // deltaT
   lastT = micros();
   // to set a timer for when the rocket launches
@@ -141,6 +143,9 @@ void dataLogging()
       "\n";
   logData(dataString);
 }
+double accelErrorToZeroVelo = 0;
+double accelErrorToZeroVeloADXL = 0;
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Serial Begin");
@@ -169,14 +174,27 @@ void setup() {
   servoSetup();
   lastT = micros();
   Serial.println("start");
+  delay(5000);
 
+  for (int i = 0; i < 10; i++){
+    timeStuff();
+    IMUdata(deltaT);
+    getADXLData();
+
+    delay(100);
+  }
+  accelErrorToZeroVelo = zGlobalAccel;
+  accelErrorToZeroVeloADXL = axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+");
+  Serial.print("accel Zero :");
+  Serial.println(accelErrorToZeroVelo);
+  delay(1000);
   pinMode(2, OUTPUT);  // blue LED
   digitalWrite(2, HIGH);
-  delay(1000);
-  openOpenFlap();
-  delay(1000);
-  closeCloseFlap();
-  delay(5000);
+  // delay(1000);
+  // openOpenFlap();
+  // delay(1000);
+  // closeCloseFlap();
+  // delay(5000);
 
 }
 
@@ -192,14 +210,15 @@ void downwardLogic() {
   }
 }
 float accelVelo = 0;
+float accelVeloADXL = 0;
 float predAlt = 0;
 float error;
 unsigned long lastAirBrakeDeployTime = 0;
 unsigned long lastAirBrakeRetractTime = 0;
 void loop() {
   timeStuff();
-  baroDataRead();
-  altitudeProcessing(deltaT);
+  // baroDataRead();
+  // altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
 
@@ -222,32 +241,61 @@ void loop() {
     #pragma region 
     // dataLogging();
     //
-    dataLogging();
-    closeSD();
-    openOpenSD();
+    // dataLogging();
+    // closeSD();
+    // openOpenSD();
+
+    accelVelo += (zGlobalAccel-accelErrorToZeroVelo)*deltaT/1000000.0;
+    accelVeloADXL += (axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+")-accelErrorToZeroVeloADXL)*deltaT/1000000.0;
+
+    if ((accelVelo > 100)||(accelVelo < -100)){
+      accelVelo = 0;
+    }
     Serial.print(">");
-    Serial.print("BMP390: ");
-    Serial.print(altitude390,DATAPRECISION);
+    Serial.print("DeltaT: ");
+    Serial.print(deltaT);
     Serial.print(", ");
 
-    Serial.print("BMP580: ");
-    Serial.print(altitude580,DATAPRECISION);
+    // Serial.print("BMP390: ");
+    // Serial.print(altitude390,DATAPRECISION);
+    // Serial.print(", ");
+
+    // Serial.print("BMP580: ");
+    // Serial.print(altitude580,DATAPRECISION);
+    // Serial.print(", ");
+
+    // Serial.print("BMP390Velo: ");
+    // Serial.print(altitudeV390,DATAPRECISION);
+    // Serial.print(", ");
+
+
+    // Serial.print("BMP580Velo: ");
+    // Serial.print(altitudeV580,DATAPRECISION);
+    // Serial.print(",");
+
+    // Serial.print("baroAccel: ");
+    // Serial.print(altitudeA580,DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("GlobalZaccel: ");
+    // Serial.print(zGlobalAccel,DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("GlobalZaccelAdxl: ");
+    // Serial.print(axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+"),DATAPRECISION);
+    // Serial.print(", ");
+    Serial.print("accelVelo: ");
+    Serial.print(accelVelo,DATAPRECISION);
     Serial.print(", ");
-
-    Serial.print("BMP390Velo: ");
-    Serial.print(altitudeV390,DATAPRECISION);
+    Serial.print("accelVeloADXL: ");
+    Serial.print(accelVeloADXL,DATAPRECISION);
     Serial.print(", ");
+    // Serial.print("adxlYaccel: ");
+    // Serial.print(altitudeAccel,DATAPRECISION);
+    // Serial.print(", ");
 
-    Serial.print("AccelZ: ");
-    Serial.print(-9.8-yAccel,DATAPRECISION);
-    Serial.print(", ");
+    // Serial.print("bno055Yaccel: ");
+    // Serial.print(AccY,DATAPRECISION);
+    // Serial.print(", ");
 
-    Serial.print("BMP580Velo: ");
-    Serial.print(altitudeV580,DATAPRECISION);
-    Serial.print(",");
-
-    Serial.print("Global Z accel: ");
-    Serial.print(zGlobalAccel,DATAPRECISION);
     Serial.println();
 
 

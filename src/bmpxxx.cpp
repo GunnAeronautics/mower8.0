@@ -17,9 +17,9 @@ RollingAverage pressureRoll580(10);
 
 RollingAverage temperatureRoll(8);
 
-RollingAverage altitudeVRoll(10);
-RollingAverage altitudeVRoll390(10);
-RollingAverage altitudeVRoll580(10);
+RollingAverage altitudeVRoll(3);
+RollingAverage altitudeVRoll390(3);
+RollingAverage altitudeVRoll580(3);
 
 // Raw sensor data
 float lastAltitude = 0;

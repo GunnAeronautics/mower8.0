@@ -144,7 +144,9 @@ void IMU_BNO055setup()
     return newOrientation.k;
   }
   
-  
+  Quaternion getQuat(){
+    return bnoOrientation;;
+  }
   void IMUdata(int deltaT)
   {
     // Possible vector values can be:
