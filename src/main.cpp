@@ -48,10 +48,6 @@ int timesTheRocketIsStill = 0;
 float altitudeAccel = 0;
 double dragCoefficient = 0;
 
-int timesTheRocketIsStill = 0;
-float altitudeAccel = 0;
-double dragCoefficient = 0;
-
 KalmanVelocityEstimator kalman(1, 3);
 RollingAverage noAirBrakeDragCoef(100);
 RollingAverage airBrakeDragCoef(100);
@@ -129,25 +125,17 @@ void dataLogging()
 {
   BaroData baro = getBaroData();
   String dataString =
-      String(timeElapsed) +
-      ',' +  // rocket flight time
-             // String(pressure, DATAPRECISION) + ',' + // pressure
+      String(timeElapsed) + ',' +  // rocket flight time
+      // String(pressure, DATAPRECISION) + ',' + // pressure
       String(altitude580, DATAPRECISION) + ',' +    // alt
       String(altitudeV580, DATAPRECISION) + ',' +   // velocity - baro derived
       String(altitudeAccel, DATAPRECISION) + ',' +  // global axis
       // String(AccY, DATAPRECISION) + ',' + // local axis String(zenith,
       // DATAPRECISION) + ',' + // angle from the vertical
-      String(predictApogee(altitude580, altitudeV580,
-                           noAirBrakeDragCoef.getData()),
-             DATAPRECISION) +
-      ',' +  // apogee prediction
-      String(
-          predictApogee(altitude580, altitudeV580, airBrakeDragCoef.getData()),
-          DATAPRECISION) +
-      ',' +  // apogee prediction
+      String(predictApogee(altitude580, altitudeV580,noAirBrakeDragCoef.getData()),DATAPRECISION) + ',' +  // apogee prediction
+      String(predictApogee(altitude580, altitudeV580, airBrakeDragCoef.getData()),DATAPRECISION) + ',' +  // apogee prediction
 
-      String(dragCoefficient, DATAPRECISION) + ',' + (String)parachuteDeployed +
-      ',' + (String)dragFlapDeployed + ',' + (String)flightState + ',' +
+      String(dragCoefficient, DATAPRECISION) + ',' + (String)parachuteDeployed + ',' + (String)dragFlapDeployed + ',' + (String)flightState + ',' +
       (String)timesTheRocketIsStill + ',' +
 
       "\n";
@@ -159,8 +147,10 @@ void setup() {
 
   baroSetup();
   Serial.println("Barometric Sensor Setup Complete");
+  
+  Wire.begin(ADXL343_SDA, ADXL343_SCL);
 
-  // IMU_BNO055setup();
+  IMU_BNO055setup();
   // Serial.println("BNO055 Attached");
   adxlSetup();
   Serial.println("ADXL343 Attached");
@@ -174,9 +164,7 @@ void setup() {
   writeDataHeader();
   closeSD();
   openOpenSD();
-  writeDataHeader();
-  closeSD();
-  openOpenSD();
+
 
   servoSetup();
   lastT = micros();
@@ -187,14 +175,9 @@ void setup() {
   delay(1000);
   openOpenFlap();
   delay(1000);
-  openOpenFlap();
-
-  delay(1000);
-  closeCloseFlap();
-  delay(1000);
   closeCloseFlap();
   delay(5000);
-  delay(18000);
+
 }
 
 void downwardLogic() {
@@ -218,6 +201,8 @@ void loop() {
   baroDataRead();
   altitudeProcessing(deltaT);
   getADXLData();
+  IMUdata(deltaT);
+
   altitudeAccel = -yAccel;  // positive is upward and no gravity factored
   dragCoefficient = abs(altitudeAccel / pow(altitudeV580, 2));
 
@@ -261,8 +246,8 @@ void loop() {
     Serial.print(altitudeV580,DATAPRECISION);
     Serial.print(",");
 
-    Serial.print("Accel: ");
-    Serial.print(altitudeAccel,DATAPRECISION);
+    Serial.print("Global Z accel: ");
+    Serial.print(zGlobalAccel,DATAPRECISION);
     Serial.println();
 
 

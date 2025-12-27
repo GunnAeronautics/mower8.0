@@ -103,7 +103,6 @@ void displayRange(void)
 void adxlSetup(void)
 {
   /* Initialize I2C with custom pins */
-  Wire.begin(ADXL343_SDA, ADXL343_SCL);
 
   /* Initialise the sensor */
   if(!accel.begin(ADXL343_ADR))  // Address 0x53 if SDO = GND , &Wire

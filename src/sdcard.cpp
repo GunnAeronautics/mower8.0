@@ -115,7 +115,7 @@ void sdSetup()
 void closeSD(){
   if (closed == false){
     file.close();
-    Serial.println("CLOSED!!!");
+    // Serial.println("CLOSED!!!");
   }
   else{
     Serial.println("Already Closed!");

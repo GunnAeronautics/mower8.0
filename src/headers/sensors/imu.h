@@ -14,9 +14,9 @@ extern float GyroX, GyroY, GyroZ; // deg / sec
 extern float AccX, AccY, AccZ;    // Gs
 extern float MagX, MagY, MagZ;    // Gs
 
-extern double zAccel; // in m/s^2
-extern double xAccel; // in m/s^2
-extern double yAccel; // in m/s^2
+extern double zGlobalAccel; // in m/s^2
+extern double xGlobalAccel; // in m/s^2
+extern double yGlobalAccel; // in m/s^2
 
 extern float heading;        // in radians
 extern float zenith;         // in radians

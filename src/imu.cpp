@@ -9,17 +9,18 @@ float AccX, AccY, AccZ;    // Gs
 float MagX, MagY, MagZ;    // Gs
 uint8_t systemCali,gyroCali,accelCali,magCali;
 // accelerations in m/s^2 (definitions for externs in imu.h)
-extern double zAccel; // in m/s^2
-extern double xAccel; // in m/s^2
-extern double yAccel; // in m/s^2
+extern double zGlobalAccel = 0.0; // in m/s^2
+extern double xGlobalAccel = 0.0; // in m/s^2
+extern double yGlobalAccel = 0.0; // in m/s^2
 
 // Compile-time or runtime fake IMU support:
 // Define FAKE_IMU in build flags to default to fake mode, or set `fakeimu` at runtime.
-#ifdef FAKE_IMU
-bool fakeimu = true;
-#else
+// #ifdef FAKE_IMU
+// bool fakeimu = true;
+// #else
+// bool fakeimu = false;
+// #endif
 bool fakeimu = false;
-#endif
 
 float heading;        // in radians
 float zenith;        // in radians
@@ -49,9 +50,9 @@ void IMU_BNO055setup()
       orientation.setQuat(1, 0, 0, 0);
       bnoOrientation.setQuat(1, 0, 0, 0);
       zenith = 0;
-      zAccel = 9.81;
-      xAccel = 0;
-      yAccel = 0;
+      zGlobalAccel = 9.81;
+      xGlobalAccel = 0;
+      yGlobalAccel = 0;
       AccX = AccY = 0;
       AccZ = 9.81;
       MagX = MagY = MagZ = 0;
@@ -59,9 +60,6 @@ void IMU_BNO055setup()
       Serial.println("IMU: fake mode enabled");
       return;
     }
-
-    Wire.begin(SDA_PIN, SCL_PIN);
-    delay(1000);
 
     if (!bno.begin())
     {
@@ -165,9 +163,9 @@ void IMU_BNO055setup()
       AccY = sin(tt * 2.0f * PI) * 0.5f; // +-0.5 g-ish
       AccZ = 9.81f;
       // zAccel, xAccel, yAccel expressed in m/s^2
-      zAccel = AccZ;
-      xAccel = AccX;
-      yAccel = AccY;
+      zGlobalAccel = AccZ;
+      xGlobalAccel = AccX;
+      yGlobalAccel = AccY;
       // heading/zenith slowly rotate
       heading = fmod(tt * 10.0f, 360.0f);
       zenith = 45.0f; // constant example value (degrees in original code)
@@ -204,9 +202,9 @@ void IMU_BNO055setup()
     bnoOrientation.setQuat(quat.w(),quat.x(),quat.y(),quat.z());
 
     zenith = angleBetweenAxis(bnoOrientation,"Y+");
-    zAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
-    //xAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "X+");
-    //yAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Y+");
+    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+    //xGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "X+");
+    //yGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Y+");
   
     //trueAngle = magAngle(orientation, mag.x(), mag.y(), mag.z());
 
