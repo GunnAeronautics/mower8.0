@@ -1,480 +1,136 @@
+/*
+ float ax = (rawX - X_OFFSET) * X_SCALE / G_LSB;
+float ay = (rawY - Y_OFFSET) * Y_SCALE / G_LSB;
+float az = (rawZ - Z_OFFSET) * Z_SCALE / G_LSB;
 
+Offsets:
+X_OFFSET = -4.33
+Y_OFFSET = 4.44
+Z_OFFSET = 8.03
 
-// Sup guys this is Tony the main programmer on the ASTRA24-25 tarc team
-// make sure to use camelCase for variables and functions
-// use ALLCAPS and UNDER_SCORES for definitions
-//
-#include <Arduino.h>
-#include <math.h>
+Scale factors:
+X_SCALE = 0.994841
+Y_SCALE = 0.991441
+Z_SCALE = 1.034657
 
-// Configuration and constants
-#include "headers/config/config.h"
+*/
 
-// Homebrew libraries:
-#include "headers/math/KalmanVelocityEstimator.h"
-#include "headers/sensors/adxl.h"
-#include "headers/sensors/bmpxxx.h"
-#include "headers/sensors/imu.h"
-#include "headers/utils/sdcard.h"
-#include "headers/utils/servos.h"
+#include <Wire.h>
+#include <HardwareSerial.h>
 
-// Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
-// ur gonna have to do ts again Servo deployment angles configured in config.h:
-//   - Drag flaps deployed: 45°
-//   - Drag flaps undeployed: 135°
-//   - Parachute deployed: 170°
-//   - Parachute undeployed: 10°
+#define ADXL343_ADDR 0x53
 
-// Time variables
-unsigned long lastT;
-static int deltaT;
-unsigned long startTimeStamp = 0; // ms
-unsigned long burnoutTimeStamp = 0; // ms
+#define REG_POWER_CTL   0x2D
+#define REG_DATA_FORMAT 0x31
+#define REG_DATAX0      0x32
 
-long timeElapsed = 0;             // time elapsed in flight (ms)
-long timeElapsedSinceBurnout = 0;             // time elapsed in flight (ms)
+#define SAMPLES 200
+#define G_LSB 256.0f   // ~256 LSB = 1g for ADXL343 @ ±2g
 
-int lastMovementT = 0;            // ms
+struct Vec3 {
+  float x, y, z;
+};
 
-// Deployment states
-bool dragFlapDeployed = false;
-bool parachuteDeployed = false;
+Vec3 meas[6];   // +X, -X, +Y, -Y, +Z, -Z
+Vec3 offset;
+Vec3 scale;
 
-// States & triggers
-// VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
-int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
-int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
-int numberOfNegatives = 0;
-int timesTheRocketIsStill = 0;
-float altitudeAccel = 0;
-double dragCoefficient = 0;
+void writeReg(uint8_t reg, uint8_t val) {
+  Wire.beginTransmission(ADXL343_ADDR);
+  Wire.write(reg);
+  Wire.write(val);
+  Wire.endTransmission();
+}
 
-KalmanVelocityEstimator kalman(1, 3);
-RollingAverage noAirBrakeDragCoef(100);
-RollingAverage airBrakeDragCoef(100);
+int16_t readAxis(uint8_t reg) {
+  Wire.beginTransmission(ADXL343_ADDR);
+  Wire.write(reg);
+  Wire.endTransmission();
+  Wire.requestFrom(ADXL343_ADDR, 2);
+  return (int16_t)(Wire.read() | (Wire.read() << 8));
+}
 
-// everything related to timing
-void timeStuff()
-{
-  // while ((micros()-lastT) < 10000);
-  deltaT = micros() - lastT; // deltaT
-  lastT = micros();
-  // to set a timer for when the rocket launches
-  if ((startTimeStamp == 0) && (flightState != 0)) {
-    timeElapsed = 0;
-  } else {
-    timeElapsed = millis() - startTimeStamp;
+Vec3 readAverage() {
+  long sx = 0, sy = 0, sz = 0;
+
+  for (int i = 0; i < SAMPLES; i++) {
+    sx += readAxis(REG_DATAX0);
+    sy += readAxis(REG_DATAX0 + 2);
+    sz += readAxis(REG_DATAX0 + 4);
+    delay(5);
   }
 
-  if (flightState < 3){
-    timeElapsedSinceBurnout = 0;
-  }
-  else{
-    timeElapsedSinceBurnout = millis() - burnoutTimeStamp;
-  }
+  return {
+    sx / (float)SAMPLES,
+    sy / (float)SAMPLES,
+    sz / (float)SAMPLES
+  };
 }
 
-float predictApogee(float alt, float v, float dragCoef) {
-  return alt + log((dragCoef * v * v / 9.81) + 1) /
-                   (2.0 * dragCoef);  // copied from mower6.0
-}
-float predictApogeeIdeal(float alt, float v) {
-  return alt + pow(v, 2) / 2. / GRAVITY;
-}
-float coefOfDrag(float accel, float v) {
-  float coef = abs(accel / v / v);
-  return coef;
-}
-void openOpenFlap(){
-  dragFlapDeployed = true;
-  closeSD();
-  openOpenSD();
-  openFlaps();
-}
-void closeCloseFlap(){
-  dragFlapDeployed = false;
-  closeSD();
-  openOpenSD();
-  closeFlaps();
+void waitForEnter() {
+  while (!Serial.available());
+  while (Serial.available()) Serial.read();
 }
 
-void writeDataHeader(){
-  String datalogHeader = 
-  "timeElapsed,"
-  "pres390,"
-  "pres580,"
-
-  "alt,"
-  "alt390,"
-
-  "altV,"
-  "altA,"
-  "predictApogee nobrakes,"
-  "predictApogee brakes,"
-  "drag coef,"
-  "R Deployed,"
-  "dragFlaps deployed,"
-  "flight state,"
-  "time still,"
-
-  "so on"
-  "\n";
-  logData(datalogHeader);
+void prompt(const char* msg) {
+  Serial.println();
+  Serial.println(msg);
+  Serial.println("Press ENTER when ready...");
+  waitForEnter();
 }
-
-void dataLogging()
-{
-  BaroData baro = getBaroData();
-  String dataString =
-      String(timeElapsed) + ',' +  // rocket flight time
-      // String(pressure, DATAPRECISION) + ',' + // pressure
-      String(altitude580, DATAPRECISION) + ',' +    // alt
-      String(altitudeV580, DATAPRECISION) + ',' +   // velocity - baro derived
-      String(altitudeAccel, DATAPRECISION) + ',' +  // global axis
-      // String(AccY, DATAPRECISION) + ',' + // local axis String(zenith,
-      // DATAPRECISION) + ',' + // angle from the vertical
-      String(predictApogee(altitude580, altitudeV580,noAirBrakeDragCoef.getData()),DATAPRECISION) + ',' +  // apogee prediction
-      String(predictApogee(altitude580, altitudeV580, airBrakeDragCoef.getData()),DATAPRECISION) + ',' +  // apogee prediction
-
-      String(dragCoefficient, DATAPRECISION) + ',' + (String)parachuteDeployed + ',' + (String)dragFlapDeployed + ',' + (String)flightState + ',' +
-      (String)timesTheRocketIsStill + ',' +
-
-      "\n";
-  logData(dataString);
-}
-double accelErrorToZeroVelo = 0;
-double accelErrorToZeroVeloADXL = 0;
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Serial Begin");
+  Wire.begin(5, 22);
 
-  baroSetup();
-  Serial.println("Barometric Sensor Setup Complete");
-  
-  Wire.begin(ADXL343_SDA, ADXL343_SCL);
+  writeReg(REG_POWER_CTL, 0x08);   // Measure mode
+  writeReg(REG_DATA_FORMAT, 0x00); // ±2g
 
-  IMU_BNO055setup();
-  // Serial.println("BNO055 Attached");
-  adxlSetup();
-  Serial.println("ADXL343 Attached");
+  Serial.println("=== ADXL343 3D Calibration ===");
 
-  Serial.println("Ground Pressure " + (String)getGroundPressure());
-  Serial.println("Ground Temperature " + (String)getGroundTemperature());
-  lastAltitude = pressToAlt(getGroundPressure());
-  lastAltitudeBuiltIn = getAltitude();
+  prompt("Place sensor with +X pointing UP");
+  meas[0] = readAverage();
 
-  sdSetup();
-  writeDataHeader();
-  closeSD();
-  openOpenSD();
+  prompt("Place sensor with -X pointing UP");
+  meas[1] = readAverage();
 
+  prompt("Place sensor with +Y pointing UP");
+  meas[2] = readAverage();
 
-  servoSetup();
-  lastT = micros();
-  Serial.println("start");
-  delay(5000);
+  prompt("Place sensor with -Y pointing UP");
+  meas[3] = readAverage();
 
-  for (int i = 0; i < 10; i++){
-    timeStuff();
-    IMUdata(deltaT);
-    getADXLData();
+  prompt("Place sensor with +Z pointing UP");
+  meas[4] = readAverage();
 
-    delay(100);
-  }
-  accelErrorToZeroVelo = zGlobalAccel;
-  accelErrorToZeroVeloADXL = axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+");
-  Serial.print("accel Zero :");
-  Serial.println(accelErrorToZeroVelo);
-  delay(1000);
-  pinMode(2, OUTPUT);  // blue LED
-  digitalWrite(2, HIGH);
-  // delay(1000);
-  // openOpenFlap();
-  // delay(1000);
-  // closeCloseFlap();
-  // delay(5000);
+  prompt("Place sensor with -Z pointing UP");
+  meas[5] = readAverage();
 
+  // Offsets
+  offset.x = (meas[0].x + meas[1].x) / 2.0f;
+  offset.y = (meas[2].y + meas[3].y) / 2.0f;
+  offset.z = (meas[4].z + meas[5].z) / 2.0f;
+
+  // Scale factors
+  scale.x = (2.0f * G_LSB) / (meas[0].x - meas[1].x);
+  scale.y = (2.0f * G_LSB) / (meas[2].y - meas[3].y);
+  scale.z = (2.0f * G_LSB) / (meas[4].z - meas[5].z);
+
+  Serial.println("\n=== CALIBRATION RESULTS ===");
+
+  Serial.println("\nOffsets:");
+  Serial.print("X_OFFSET = "); Serial.println(offset.x);
+  Serial.print("Y_OFFSET = "); Serial.println(offset.y);
+  Serial.print("Z_OFFSET = "); Serial.println(offset.z);
+
+  Serial.println("\nScale factors:");
+  Serial.print("X_SCALE = "); Serial.println(scale.x, 6);
+  Serial.print("Y_SCALE = "); Serial.println(scale.y, 6);
+  Serial.print("Z_SCALE = "); Serial.println(scale.z, 6);
+
+  Serial.println("\nCopy these into your main program.");
 }
 
-void downwardLogic() {
-  if (((float(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) *
-       PARACHUTE_TERM_VELOCITY) > getAltitude()) {  // main logic works!!!
-    deployChute();
-    parachuteDeployed = true;
-  }
-  if (getAltitude() < 20.) {  // saftey (falling down and altitude less than 20)
-    deployChute();
-    parachuteDeployed = true;
-  }
-}
-float accelVelo = 0;
-float accelVeloADXL = 0;
-float predAlt = 0;
-float error;
-unsigned long lastAirBrakeDeployTime = 0;
-unsigned long lastAirBrakeRetractTime = 0;
 void loop() {
-  timeStuff();
-  // baroDataRead();
-  // altitudeProcessing(deltaT);
-  getADXLData();
-  IMUdata(deltaT);
-
-  altitudeAccel = -yAccel;  // positive is upward and no gravity factored
-  dragCoefficient = abs(altitudeAccel / pow(altitudeV580, 2));
-
-#ifdef DEBUG
-  delay(1000);  // you only want a delay because serial printing is gets bogged
-                // down
-#endif
-
-  // main control things
-  switch (flightState)
-  {
-  case 0: // happy data printing mode
-    // dataLogging();
-    // if (altitude580 > 0.4){
-    //   closeSD();
-    // }
-    #pragma region 
-    // dataLogging();
-    //
-    // dataLogging();
-    // closeSD();
-    // openOpenSD();
-
-    accelVelo += (zGlobalAccel-accelErrorToZeroVelo)*deltaT/1000000.0;
-    accelVeloADXL += (axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+")-accelErrorToZeroVeloADXL)*deltaT/1000000.0;
-
-    if ((accelVelo > 100)||(accelVelo < -100)){
-      accelVelo = 0;
-    }
-    Serial.print(">");
-    Serial.print("DeltaT: ");
-    Serial.print(deltaT);
-    Serial.print(", ");
-
-    // Serial.print("BMP390: ");
-    // Serial.print(altitude390,DATAPRECISION);
-    // Serial.print(", ");
-
-    // Serial.print("BMP580: ");
-    // Serial.print(altitude580,DATAPRECISION);
-    // Serial.print(", ");
-
-    // Serial.print("BMP390Velo: ");
-    // Serial.print(altitudeV390,DATAPRECISION);
-    // Serial.print(", ");
-
-
-    // Serial.print("BMP580Velo: ");
-    // Serial.print(altitudeV580,DATAPRECISION);
-    // Serial.print(",");
-
-    // Serial.print("baroAccel: ");
-    // Serial.print(altitudeA580,DATAPRECISION);
-    // Serial.print(", ");
-    // Serial.print("GlobalZaccel: ");
-    // Serial.print(zGlobalAccel,DATAPRECISION);
-    // Serial.print(", ");
-    // Serial.print("GlobalZaccelAdxl: ");
-    // Serial.print(axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+"),DATAPRECISION);
-    // Serial.print(", ");
-    Serial.print("accelVelo: ");
-    Serial.print(accelVelo,DATAPRECISION);
-    Serial.print(", ");
-    Serial.print("accelVeloADXL: ");
-    Serial.print(accelVeloADXL,DATAPRECISION);
-    Serial.print(", ");
-    // Serial.print("adxlYaccel: ");
-    // Serial.print(altitudeAccel,DATAPRECISION);
-    // Serial.print(", ");
-
-    // Serial.print("bno055Yaccel: ");
-    // Serial.print(AccY,DATAPRECISION);
-    // Serial.print(", ");
-
-    Serial.println();
-
-
-// Serial.println(deltaT);
-#pragma endregion
-      break;
-
-    case 1:  // on the launch pad waiting to be ignited
-      // do main rocket logic hereVVV
-      Serial.println("waiting on launch pad");
-
-    // check if rocket is off the ground 
-    // VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-    #pragma region 
-    if (altitude580 > 10)
-    { // tune these thresholds and statements
-      flightStateAdvancementTrigger++;
-      if (flightStateAdvancementTrigger > 3)
-      { // tune this thresholds
-        startTimeStamp = millis(); // start the flight timer here
-        flightState++;
-      }
-    }
-    else
-    {
-      flightStateAdvancementTrigger = 0;
-    }
-    #pragma endregion
-    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-    break;
-  case 2:
-    dataLogging();
-
-    //checking if rocket's motor burned out
-    //============================================================
-    #pragma region 
-    if ((altitudeAccel < 0)||(altitudeV580 < 0.5)){//rocket is going downwards
-      //checking if rocket going down
-      flightStateAdvancementTrigger++;
-      if (flightStateAdvancementTrigger > 3){
-        burnoutTimeStamp = millis();
-        lastAirBrakeRetractTime = millis();
-
-        flightStateAdvancementTrigger = 0;
-        flightState ++;
-      }
-    }
-    else{
-      flightStateAdvancementTrigger = 0;
-    }
-    #pragma endregion
-    //============================================================
-
-    
-  case 3: // flight
-    dataLogging();
-
-    if (altitudeV580 >= 0.5){//rocket is going upward
-        //bread and butter
-          
-        if (timeElapsedSinceBurnout < 1000){
-          
-          closeCloseFlap();
-          lastAirBrakeDeployTime = millis();
-        }
-        else if (timeElapsedSinceBurnout < 2000){
-          openOpenFlap();
-        }
-
-        else{
-
-        //safety vvv
-        if ((altitude580 > DESIRED_APOGEE)){
-          openOpenFlap();
-        }
-        // ^^^
-        //cooked saftey
-        if (predictApogeeIdeal(altitude580,altitudeV580) < DESIRED_APOGEE){
-          closeCloseFlap();
-        }
-
-        //the best part
-        else{ 
-          if (predictApogee(altitude580,altitudeV580,airBrakeDragCoef.getData()) >= DESIRED_APOGEE){
-            //moveFlaps(100);
-            openOpenFlap();
-          }
-          else{
-            closeCloseFlap();
-          }
-        }
-        }
-        if ((dragFlapDeployed == false)&&(lastAirBrakeRetractTime < (millis()-DRAG_FLAP_ARM_TIME))){
-          noAirBrakeDragCoef.newData(dragCoefficient);
-        }
-        if ((dragFlapDeployed == true)&&(lastAirBrakeDeployTime < (millis()-DRAG_FLAP_ARM_TIME))){
-          airBrakeDragCoef.newData(dragCoefficient);
-        }
-
-      }
-        
-        
-      
-
-
-    //checking if rocket is past apogee
-    //============================================================
-    #pragma region 
-    if ((altitudeV580 < 0.5)){//rocket is going downwards
-      //checking if rocket going down
-      flightStateAdvancementTrigger++;
-      if (flightStateAdvancementTrigger > 10){
-        flightState ++;
-        flightStateAdvancementTrigger = 0;
-        closeSD();
-        openOpenSD();
-      }
-    }
-    else{
-      flightStateAdvancementTrigger = 0;
-    }
-    #pragma endregion
-    //============================================================
-    break;
-  case 4:
-    closeSD();
-    openOpenSD();
-    dataLogging();
-
-    closeCloseFlap();
-
-    downwardLogic();
-    
-    //checking if rocket on the ground
-    //============================================================
-    #pragma region 
-    if (((altitudeV580 > -1)&&(altitudeV580 < 1))||(timeElapsed > 100000)){//on the ground or 100 sec has passed
-      timesTheRocketIsStill ++;
-    }
-    else{
-      timesTheRocketIsStill = 0;
-    }
-    if (timesTheRocketIsStill > 30){
-      flightState ++;
-    }
-    #pragma endregion
-    //============================================================
-  
-
-    break;
-  case 5:
-    closeSD();
-
-    Serial.println("We done");
-    break; 
-    
-  }
+  // Nothing – calibration done
 }
-// wow looks like the code is super neat < 200 lines woaw
-/*
-If u are reading this it looks like ur the 1 other person who has read the code
-persons reading this count: 2
-Heres a donut:
-                       $@@@$$$######
-                     $@@@@@@$$#**!=!!**##
-                   #$$@@@@@$$$##!=:::;=!*###
-                  *#$$$@@@@@$$$$#*=.~:;;!!*#$$$
-                 =*##$$$$@@@@$$$$##*;,-:=!*#$$$@$#
-                 =*###$$$$$$$$$$$$$$#*!-~=!*#$$@@@$#
-                 ;!!*####$$$$$$$$$$$$$##*!==!*#$$$@$$*
-                 ;=!**####$$$$$$$$$$$$$$###**!!*##$$$$#
-                  ;=!!***######$$$$$$$$$$$$$############
-                  ~;=!!!!**#*######$#$$$$$$$############*
-                   ~:;=!!!*!***#*######################**=
-                    -~;;=!!!!!********#############****!!=
-                      -:;;;==!!!!!!**!****************!!=;
-                       .-~::;;====!!!!!!*!!*!**!!!!!!==;;~
-                         .--~::;;=;====!!=!==!!=!!===;;:~
-                            .,-~~:::;:;;;;=;;==;;;;;::~-
-                               ..,--~~~~::::::::::~--.
-*/
