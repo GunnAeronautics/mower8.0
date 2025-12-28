@@ -1,5 +1,3 @@
-
-
 // Sup guys this is Tony the main programmer on the ASTRA24-25 tarc team
 // make sure to use camelCase for variables and functions
 // use ALLCAPS and UNDER_SCORES for definitions

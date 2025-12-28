@@ -10,6 +10,14 @@ extern double xAccel = 0.0;
 extern double yAccel = 0.0;
 extern double zAccel = 0.0;
 
+float X_OFFSET = -0.177698;
+float Y_OFFSET = 0.175353;
+float Z_OFFSET = 0.311556;
+
+float X_SCALE = 0.972403;
+float Y_SCALE = 0.968674;
+float Z_SCALE = 1.010908;
+
 /* Assign a unique ID to this sensor at the same time */
 /* Using I2C on default Wire bus */
 Adafruit_ADXL343 accel = Adafruit_ADXL343(12345);
@@ -133,9 +141,24 @@ void getADXLData()
   /* Get a new sensor event */
   sensors_event_t event;
   accel.getEvent(&event);
-  xAccel = event.acceleration.x;
-  yAccel = event.acceleration.y;
-  zAccel = event.acceleration.z;
+  xAccel = (event.acceleration.x - X_OFFSET) * X_SCALE;
+  yAccel = (event.acceleration.y - Y_OFFSET) * Y_SCALE;
+  zAccel = (event.acceleration.z - Z_OFFSET) * Z_SCALE;
+
+  /*
+  
+Offsets:
+X_OFFSET = -4.33
+Y_OFFSET = 4.44
+Z_OFFSET = 8.03
+
+Scale factors:
+X_SCALE = 0.994841
+Y_SCALE = 0.991441
+Z_SCALE = 1.034657
+
+  */
+
   /* Display the results (acceleration is measured in m/s^2) */
   // Serial.print("X: "); Serial.print(event.acceleration.x); Serial.print("  ");
   // Serial.print("Y: "); Serial.print(event.acceleration.y); Serial.print("  ");
