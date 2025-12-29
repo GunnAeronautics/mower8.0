@@ -55,7 +55,7 @@ RollingAverage airBrakeDragCoef(100);
 // everything related to timing
 void timeStuff()
 {
-  // while ((micros()-lastT) < 10000);
+  while ((micros()-lastT) < 6000);
   deltaT = micros() - lastT; // deltaT
   lastT = micros();
   // to set a timer for when the rocket launches
@@ -209,25 +209,34 @@ void downwardLogic() {
 }
 float accelVelo = 0;
 float accelVeloADXL = 0;
+float accelPos = 0;
 float predAlt = 0;
 float error;
 unsigned long lastAirBrakeDeployTime = 0;
 unsigned long lastAirBrakeRetractTime = 0;
-void loop() {
-  timeStuff();
-  // baroDataRead();
-  // altitudeProcessing(deltaT);
-  getADXLData();
-  IMUdata(deltaT);
+bool core1done = false;
+bool core0done = false;
 
-  altitudeAccel = -yAccel;  // positive is upward and no gravity factored
-  dragCoefficient = abs(altitudeAccel / pow(altitudeV580, 2));
+float myGlobalZAccel;
+float myGlobalZAccelBNO;
+
+float myZAccel;
+float myAccelDerrivedPos;
+
+
+void TaskCore0(void *pvParameters){
+  
+  baroDataRead();
+  altitudeProcessing(deltaT);
+  
+
+  // altitudeAccel = -yAccel;  // positive is upward and no gravity factored
+  // dragCoefficient = abs(altitudeAccel / pow(altitudeV580, 2));
 
 #ifdef DEBUG
   delay(1000);  // you only want a delay because serial printing is gets bogged
                 // down
 #endif
-
   // main control things
   switch (flightState)
   {
@@ -243,12 +252,6 @@ void loop() {
     // closeSD();
     // openOpenSD();
 
-    accelVelo += (zGlobalAccel-accelErrorToZeroVelo)*deltaT/1000000.0;
-    accelVeloADXL += (axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+")-accelErrorToZeroVeloADXL)*deltaT/1000000.0;
-
-    if ((accelVelo > 100)||(accelVelo < -100)){
-      accelVelo = 0;
-    }
     Serial.print(">");
     Serial.print("DeltaT: ");
     Serial.print(deltaT);
@@ -258,9 +261,9 @@ void loop() {
     // Serial.print(altitude390,DATAPRECISION);
     // Serial.print(", ");
 
-    // Serial.print("BMP580: ");
-    // Serial.print(altitude580,DATAPRECISION);
-    // Serial.print(", ");
+    Serial.print("BMP580: ");
+    Serial.print(altitude580,DATAPRECISION);
+    Serial.print(", ");
 
     // Serial.print("BMP390Velo: ");
     // Serial.print(altitudeV390,DATAPRECISION);
@@ -274,17 +277,16 @@ void loop() {
     // Serial.print("baroAccel: ");
     // Serial.print(altitudeA580,DATAPRECISION);
     // Serial.print(", ");
-    // Serial.print("GlobalZaccel: ");
-    // Serial.print(zGlobalAccel,DATAPRECISION);
-    // Serial.print(", ");
-    // Serial.print("GlobalZaccelAdxl: ");
-    // Serial.print(axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+"),DATAPRECISION);
-    // Serial.print(", ");
-    Serial.print("accelVelo: ");
-    Serial.print(accelVelo,DATAPRECISION);
+    Serial.print("GlobalZaccel: ");
+    Serial.print(myGlobalZAccelBNO,DATAPRECISION);
     Serial.print(", ");
-    Serial.print("accelVeloADXL: ");
-    Serial.print(accelVeloADXL,DATAPRECISION);
+    Serial.print("GlobalZaccelAdxl: ");
+    Serial.print(myGlobalZAccel,DATAPRECISION);
+    Serial.print(", ");
+
+
+    Serial.print("accelPos: ");
+    Serial.print(myAccelDerrivedPos,DATAPRECISION);
     Serial.print(", ");
     // Serial.print("adxlYaccel: ");
     // Serial.print(altitudeAccel,DATAPRECISION);
@@ -331,7 +333,7 @@ void loop() {
     //checking if rocket's motor burned out
     //============================================================
     #pragma region 
-    if ((altitudeAccel < 0)||(altitudeV580 < 0.5)){//rocket is going downwards
+    if ((myZAccel < 0)||(altitudeV580 < 0.5)){//rocket is going downwards
       //checking if rocket going down
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3){
@@ -452,6 +454,61 @@ void loop() {
     break; 
     
   }
+
+  core0done = true;
+  vTaskDelete(NULL);
+}
+
+void TaskCore1(void *pvParameters){
+  getADXLData();
+  IMUdata(deltaT);
+
+    accelVelo += (zGlobalAccel-accelErrorToZeroVelo)*deltaT/1000000.0;
+    accelVeloADXL += (axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+")-accelErrorToZeroVeloADXL)*deltaT/1000000.0;
+    accelPos += accelVeloADXL*deltaT/1000000.0;
+    if ((accelVelo > 100)||(accelVelo < -100)){
+      accelVelo = 0;
+    }
+    if ((accelPos > 5)||(accelPos < -5)){
+      accelPos = 0;
+      accelVeloADXL = 0;
+    }
+
+  core1done = true;
+  vTaskDelete(NULL);
+
+
+}
+
+
+void loop() {
+  timeStuff();
+  core0done = false;
+  core1done = false;
+  xTaskCreatePinnedToCore(
+    TaskCore0,          // Function
+    "TaskCore0",        // Name
+    10000,              // Stack size (bytes)
+    NULL,               // Parameters
+    1,                  // Priority
+    NULL,               // Task handle
+    0);                 // Core 0
+
+  xTaskCreatePinnedToCore(
+    TaskCore1,
+    "TaskCore1",
+    10000,
+    NULL,
+    1,
+    NULL,
+    1);                 // Core 1
+
+
+  while (core0done == false){delay(1);int i = 1+1;};
+  myGlobalZAccel = axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+");
+  myZAccel = zAccel;
+  myAccelDerrivedPos = accelPos;
+  myGlobalZAccelBNO = zGlobalAccel;
 }
 // wow looks like the code is super neat < 200 lines woaw
 /*
