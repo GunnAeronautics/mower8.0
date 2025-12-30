@@ -1,4 +1,6 @@
 #include "headers/sensors/imu.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, BNO_ADDRESS, &Wire);
 Quaternion orientation;
@@ -12,6 +14,34 @@ uint8_t systemCali,gyroCali,accelCali,magCali;
 extern double zGlobalAccel = 0.0; // in m/s^2
 extern double xGlobalAccel = 0.0; // in m/s^2
 extern double yGlobalAccel = 0.0; // in m/s^2
+
+SemaphoreHandle_t zGlobalAccelMutex = nullptr;
+
+static void writeZGlobalAccel(double value)
+{
+  if (zGlobalAccelMutex != nullptr &&
+      xSemaphoreTake(zGlobalAccelMutex, portMAX_DELAY) == pdTRUE)
+  {
+    zGlobalAccel = value;
+    xSemaphoreGive(zGlobalAccelMutex);
+    return;
+  }
+
+  zGlobalAccel = value;
+}
+
+double readZGlobalAccel()
+{
+  if (zGlobalAccelMutex != nullptr &&
+      xSemaphoreTake(zGlobalAccelMutex, portMAX_DELAY) == pdTRUE)
+  {
+    double value = zGlobalAccel;
+    xSemaphoreGive(zGlobalAccelMutex);
+    return value;
+  }
+
+  return zGlobalAccel;
+}
 
 // Compile-time or runtime fake IMU support:
 // Define FAKE_IMU in build flags to default to fake mode, or set `fakeimu` at runtime.
@@ -45,12 +75,17 @@ void writeRegister(uint8_t reg, uint8_t value) {
 
 void IMU_BNO055setup()
   {
+    if (zGlobalAccelMutex == nullptr)
+    {
+      zGlobalAccelMutex = xSemaphoreCreateMutex();
+    }
+
     // If running in fake IMU mode, skip hardware init and set sane defaults.
     if (fakeimu) {
       orientation.setQuat(1, 0, 0, 0);
       bnoOrientation.setQuat(1, 0, 0, 0);
       zenith = 0;
-      zGlobalAccel = 9.81;
+      writeZGlobalAccel(9.81);
       xGlobalAccel = 0;
       yGlobalAccel = 0;
       AccX = AccY = 0;
@@ -165,7 +200,7 @@ void IMU_BNO055setup()
       AccY = sin(tt * 2.0f * PI) * 0.5f; // +-0.5 g-ish
       AccZ = 9.81f;
       // zAccel, xAccel, yAccel expressed in m/s^2
-      zGlobalAccel = AccZ;
+      writeZGlobalAccel(AccZ);
       xGlobalAccel = AccX;
       yGlobalAccel = AccY;
       // heading/zenith slowly rotate
@@ -204,7 +239,8 @@ void IMU_BNO055setup()
     bnoOrientation.setQuat(quat.w(),quat.x(),quat.y(),quat.z());
 
     zenith = angleBetweenAxis(bnoOrientation,"Y+");
-    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+    double newZGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+    writeZGlobalAccel(newZGlobalAccel);
     //xGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "X+");
     //yGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Y+");
   
