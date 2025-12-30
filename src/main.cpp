@@ -54,28 +54,32 @@ double dragCoefficient = 0;
 KalmanVelocityEstimator kalman(1, 3);
 RollingAverage noAirBrakeDragCoef(100);
 RollingAverage airBrakeDragCoef(100);
-
-void timeStuff()
-{
+void timeStuff() {
   unsigned long currentMicros = micros();
+  
+  if (currentMicros <= lastT) return; 
 
-  while (currentMicros - lastT < 6000)
-  {
-    currentMicros = micros();
+  while (micros() - lastT < 6000) {
+    delayMicroseconds(10); 
   }
 
-  deltaT = currentMicros - lastT;
-  lastT = currentMicros;
+  unsigned long now = micros();
+  deltaT = now - lastT;
+  lastT = now;
 
   unsigned long currentMillis = millis();
 
-  timeElapsed = (startTimeStamp == 0 && flightState != 0)
-                    ? 0
-                    : currentMillis - startTimeStamp;
+  if (startTimeStamp == 0) {
+      timeElapsed = currentMillis;
+  } else {
+      timeElapsed = currentMillis - startTimeStamp;
+  }
 
-  timeElapsedSinceBurnout = (flightState < 3)
-                                ? 0
-                                : currentMillis - burnoutTimeStamp;
+  if (burnoutTimeStamp != 0) {
+      timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
+  } else {
+      timeElapsedSinceBurnout = 0;
+  }
 }
 
 float predictApogee(float alt, float v, float dragCoef)
@@ -190,7 +194,6 @@ float myGlobalZAccelBNO;
 float myZAccel;
 float myAccelDerrivedPos;
 
-// so the problem is global zaccell and adxl zaccel are nan
 
 void TaskCore0(void *pvParameters)
 {
@@ -296,7 +299,7 @@ void TaskCore0(void *pvParameters)
         }
         break;
 
-      case 3: // flight       FIX: we need to predict apogee and open to have it hit apogee
+      case 3: // flight
         dataLogging();
 
         if (altitudeV580 >= 0.5)
@@ -412,21 +415,28 @@ void TaskCore1(void *pvParameters)
     {
       getADXLData();
       IMUdata(deltaT);
-
-      // Physics integration
-      float currentGZ = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
-      accelVelo += (zGlobalAccel - accelErrorToZeroVelo) * deltaT / 1000000.0;
-      accelVeloADXL += (currentGZ - accelErrorToZeroVeloADXL) * deltaT / 1000000.0;
-      accelPos += accelVeloADXL * deltaT / 1000000.0;
-
-      // Anti-drift clamping
-      if (accelVelo > 100 || accelVelo < -100)
-        accelVelo = 0;
-      if (accelPos > 5 || accelPos < -5)
+        // only integrate if we are actually flying or testing
+      if (flightState >= 2 && flightState < 5 || flightState == 0) 
       {
-        accelPos = 0;
-        accelVeloADXL = 0;
+          float currentGZ = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
+          
+          // Velocity integration
+          accelVelo += (zGlobalAccel - accelErrorToZeroVelo) * deltaT / 1000000.0;
+          accelVeloADXL += (currentGZ - accelErrorToZeroVeloADXL) * deltaT / 1000000.0;
+          
+          // Position integration
+          accelPos += accelVeloADXL * deltaT / 1000000.0;
+      } 
+      else 
+      {
+          // zero if on pad or landed
+          accelVelo = 0;
+          accelVeloADXL = 0;
+          accelPos = 0;
       }
+
+      // clamp
+      if (accelVelo > 100 || accelVelo < -100) accelVelo = 0;
 
       core1done = true;
     }
