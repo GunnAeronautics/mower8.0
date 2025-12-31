@@ -40,5 +40,6 @@ float angleBetweenAxis(Quaternion orientation, String dir);
 float radiansToDegrees(float angle);
 float degreesToRadians(float angle);
 Quaternion getQuat();
+double readZGlobalAccel();
 
 #endif // IMU_H
