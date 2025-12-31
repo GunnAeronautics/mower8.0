@@ -224,7 +224,14 @@ void IMU_BNO055setup()
     // Serial.print(", ");
     // Serial.print(trueAngle);
     // Serial.print(", ");
-  
+    Serial.print(systemCali);
+    Serial.print(",");
+    Serial.print(gyroCali);
+    Serial.print(",");
+    Serial.print(accelCali);
+    Serial.print(",");
+    Serial.print(magCali);
+    Serial.println();
     // Serial.print(orientation.w);Serial.print(", ");
     // Serial.print(orientation.i);Serial.print(", ");
     // Serial.print(orientation.j);Serial.print(", ");
