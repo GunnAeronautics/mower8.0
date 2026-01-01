@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+
 #define FAKE_IMU true
 // #define DEBUG
 
@@ -14,12 +15,11 @@
 #define SERVO_M 4 // 3
 #define SERVO_N 18 // 4 120.60 41.4 37.9
 
-// BMP390/BMP580 Barometric Sensor Pins
+// BMP581 Barometric Sensor Pins
 #define BMP_SCK 13 //clk // scl
 #define BMP_MISO 27 //sdo // 
 #define BMP_MOSI 14 //sda //
-#define BMP390_CS 33
-#define BMP580_CS 32
+#define BMP_CS 32
 
 // ADXL343 Accelerometer Pins, -- uses i2c now
 /*#define ADXL343_SCK 13
@@ -31,9 +31,7 @@
 #define ADXL343_SDA 5
 
  //BNO055 IMU I2C Configuration
-#define BNO_ADDRESS 0x29
-#define SDA_PIN 21
-#define SCL_PIN 22
+
 
 
 // SD Card SPI Pins
@@ -60,9 +58,9 @@
 // FLIGHT PARAMETERS
 // ============================================================================
 
-// Apogee and flight time targets (TARC competition specifications)
-#define DESIRED_APOGEE 240.792        // m (790 ft specified by TARC guidelines)
-#define DESIRED_FLIGHT_TIME 42500     // milliseconds (41-44 sec regulation 2025)
+// Apogee and flight time targets (ARC competition specifications)
+#define DESIRED_APOGEE 228.6        // m (750 ft specified by ARC guidelines)
+#define DESIRED_FLIGHT_TIME 37500     // milliseconds (36-39 sec regulation 2026)
 
 // Parachute and drag flap configuration
 #define PARACHUTE_TERM_VELOCITY 6.5 // m/s

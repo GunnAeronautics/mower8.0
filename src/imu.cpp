@@ -1,15 +1,20 @@
 #include "headers/sensors/imu.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
-
+#ifdef BNO055
 Adafruit_BNO055 bno = Adafruit_BNO055(55, BNO_ADDRESS, &Wire);
+uint8_t systemCali,gyroCali,accelCali,magCali;
+#endif
+#ifdef BNO085
+BNO08x bno;
+#define BNO08X_ADDR 0x4A
+#endif
 Quaternion orientation;
 Quaternion angularSpeed;
 Quaternion bnoOrientation;
 float GyroX, GyroY, GyroZ; // deg / sec
 float AccX, AccY, AccZ;    // Gs
 float MagX, MagY, MagZ;    // Gs
-uint8_t systemCali,gyroCali,accelCali,magCali;
 // accelerations in m/s^2 (definitions for externs in imu.h)
 extern double zGlobalAccel = 0.0; // in m/s^2
 extern double xGlobalAccel = 0.0; // in m/s^2
@@ -72,8 +77,26 @@ void writeRegister(uint8_t reg, uint8_t value) {
     Wire.write(value);
     Wire.endTransmission();
   }
+void bnoSetup(){
+  if (bno.begin(BNO08X_ADDR, Wire) == false) {
+    Serial.println("BNO08x not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
+    while (1)
+      ;
+  }
+  Serial.println("BNO08x found!");
 
-void IMU_BNO055setup()
+  if (bno.enableReport(SH2_ROTATION_VECTOR, 5000)){
+    Serial.println("BNO085 reporting mode configured!");
+  } 
+  else{
+    Serial.println("BNO085 reporting mode NOT configured!");
+
+  }
+
+
+}
+#ifdef BNO055
+void bnoSetup()
   {
     if (zGlobalAccelMutex == nullptr)
     {
@@ -91,7 +114,9 @@ void IMU_BNO055setup()
       AccX = AccY = 0;
       AccZ = 9.81;
       MagX = MagY = MagZ = 0;
+      #ifdef BNO055
       systemCali = gyroCali = accelCali = magCali = 0;
+      #endif
       Serial.println("IMU: fake mode enabled");
       return;
     }
@@ -123,6 +148,7 @@ void IMU_BNO055setup()
     Serial.println("Orientation Initialized");
   
   }
+#endif
   
 
   float degreesToRadians(float angle)
@@ -184,6 +210,8 @@ void IMU_BNO055setup()
   Quaternion getQuat(){
     return bnoOrientation;;
   }
+
+  #ifdef BNO055
   void IMUdata(int deltaT)
   {
     // Possible vector values can be:
@@ -300,3 +328,34 @@ void IMU_BNO055setup()
     // Serial.print(quat.y()+3);Serial.print(",");
     // Serial.print(quat.z()+3);Serial.print(",");
   }
+  #endif
+  #ifdef BNO085
+
+  void IMUdata(int deltaT){
+
+
+
+    // Has a new event come in on the Sensor Hub Bus?
+    if (bno.getSensorEvent() == true) {
+
+      // is it the correct sensor data we want?
+      if (bno.getSensorEventID() == SENSOR_REPORTID_ROTATION_VECTOR) {
+        float bnoW = bno.getQuatI();
+
+        float bnoI = bno.getQuatI();
+        float bnoJ = bno.getQuatJ();
+        float bnoK = bno.getQuatK();
+        bnoOrientation.setQuat(bnoW,bnoI,bnoJ,bnoK);
+
+        float quatRadianAccuracy = bno.getQuatRadianAccuracy();
+        // double newZGlobalAccel = axisComponent(bnoOrientation, bno.getRawAccelX(), bno.getRawAccelY(), bno.getRawAccelZ), "Z+");
+        // writeZGlobalAccel(newZGlobalAccel);
+
+        zenith = angleBetweenAxis(bnoOrientation,"Y+");
+
+      }
+    }
+
+  }
+
+  #endif

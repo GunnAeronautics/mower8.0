@@ -4,44 +4,25 @@
 #include "../config/config.h"
 #include "../utils/RollingAverage.h"
 
-// Enum to identify which sensor is active
-enum BMPSensor {
-  BMP_NONE = 0,
-  BMP_390 = 1,
-  BMP_580 = 2
-};
 
 // Struct to hold barometric data
-struct BaroData {
-  float pressure;           // hPa
-  float temperature;        // C
-  float altitude;           // m
-  float altitudeV;          // m/s
-  float groundPressure;     // hPa
-  float groundTemperature;  // C
-  BMPSensor sensorType;     // Which sensor this data came from
-};
+
 
 // Global data structures
-extern BaroData baroData_unified;
-extern BMPSensor activeSensor;
-extern float lastAltitude;
-extern float lastAltitudeBuiltIn;
-extern double altitude390;
-extern double altitude580;
-extern double altitudeV390;
-extern double altitudeV580;
-extern double lastAltitudeV580;
-extern double altitudeA580;
-// ============================================================================
-// INITIALIZATION AND SETUP
-// ============================================================================
+extern double groundPressure;
+extern double groundTemperature;
+
+extern double lastAltitude;
+extern double lastAltitudeBuiltIn;
+extern double altitude;
+extern double altitudeV;
+extern double altitudeA;
 
 /**
  * Initialize barometric sensor (auto-detects BMP390 or BMP580)
  * Returns the type of sensor found
  */
-BMPSensor baroSetup();
+void baroSetup();
 
 // ============================================================================
 // DATA ACQUISITION
@@ -51,65 +32,7 @@ BMPSensor baroSetup();
  * Read new data from active sensor
  */
 void baroDataRead();
-
-/**
- * Read bmp specific data
- */
-
-float getBaroData_BMP390_pressure();
-float getBaroData_BMP390_temp();
-float getBaroData_BMP580_pressure();
-float getBaroData_BMP580_temp();
-
-/**
- * Process altitude and velocity calculations
- * @param deltaT Time delta in milliseconds
- */
 void altitudeProcessing(int deltaT);
-
-// ============================================================================
-// DATA ACCESS - UNIFIED
-// ============================================================================
-
-/**
- * Get unified barometric data from whichever sensor is active
- */
-BaroData getBaroData();
-
-/**
- * Get individual data fields
- */
-float getPressure();
-float getTemperature();
-float getAltitude();
-float getAltitudeVelocity();
-float getGroundPressure();
-float getGroundTemperature();
-BMPSensor getActiveSensor();
-
-// ============================================================================
-// DATA ACCESS - SENSOR SPECIFIC
-// ============================================================================
-
-/**
- * Get data from BMP390 specifically (returns 0 if not active)
- */
-BaroData getBaroData_BMP390();
-
-/**
- * Get data from BMP580 specifically (returns 0 if not active)
- */
-BaroData getBaroData_BMP580();
-
-/**
- * Check if BMP390 is available
- */
-bool isBMP390Active();
-
-/**
- * Check if BMP580 is available
- */
-bool isBMP580Active();
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -120,8 +43,6 @@ bool isBMP580Active();
  * @param pres Pressure in hecta pascals (hPa)
  * @return Altitude in meters
  */
-float pressToAlt(float pres);
-float pressToAlt390(float pres);
-float pressToAlt580(float pres);
+double pressToAlt(double pres);
 
 #endif // BMPXXX_H

@@ -1,9 +1,17 @@
 #ifndef IMU_H
 #define IMU_H
-
+// #define BNO055
+#define BNO085
 #include <Arduino.h>
 #include "../math/Quaternion.h"
+
+#ifdef BNO055
 #include <Adafruit_BNO055.h>
+#endif
+#ifdef BNO085
+#include "SparkFun_BNO08x_Arduino_Library.h"
+#endif
+
 #include <Wire.h>
 #include "../config/config.h"
 
@@ -29,10 +37,11 @@ extern float bnoW;
 extern float bnoI;
 extern float bnoJ;
 extern float bnoK;
+#ifdef BNO055
 extern uint8_t systemCali, gyroCali, accelCali, magCali;
-
+#endif
 void writeRegister(uint8_t reg, uint8_t value);
-void IMU_BNO055setup();
+void bnoSetup();
 void IMUdata(int deltaT);
 float verticalAcceleration(Quaternion orientation, float accelX, float accelY, float accelZ);
 float axisComponent(Quaternion orientation, float x, float y, float z, String dir);

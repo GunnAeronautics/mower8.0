@@ -55,10 +55,10 @@ KalmanVelocityEstimator kalman(1, 3);
 RollingAverage noAirBrakeDragCoef(100);
 RollingAverage airBrakeDragCoef(100);
 void timeStuff() {
-  unsigned long currentMicros = micros();
-  
-  if (currentMicros <= lastT) return; 
+  //safety so we don't fuck up
+  if (micros() <= lastT) return; 
 
+  //arbitrary delay
   while (micros() - lastT < 6000) {
     delayMicroseconds(10); 
   }
@@ -69,16 +69,21 @@ void timeStuff() {
 
   unsigned long currentMillis = millis();
 
-  if (startTimeStamp == 0) {
-      timeElapsed = currentMillis;
-  } else {
+  if (flightState = 0){  //debug mode
+    timeElapsed = currentMillis;
+  }
+  else if (startTimeStamp == 0) {  //flight standby
+      timeElapsed = 0;
+  }
+  else {  //during flight
       timeElapsed = currentMillis - startTimeStamp;
   }
 
-  if (burnoutTimeStamp != 0) {
-      timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
-  } else {
-      timeElapsedSinceBurnout = 0;
+  if (burnoutTimeStamp = 0) { //before burnout
+    timeElapsedSinceBurnout = 0;
+  }
+  else {//after burnout
+    timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
   }
 }
 
@@ -138,17 +143,16 @@ void writeDataHeader()
 
 void dataLogging()
 {
-  BaroData baro = getBaroData();
   String dataString =
       String(timeElapsed) + ',' +
-      String(altitude580, DATAPRECISION) + ',' +
-      String(altitudeV580, DATAPRECISION) + ',' +
+      String(altitude, DATAPRECISION) + ',' +
+      String(altitudeV, DATAPRECISION) + ',' +
       String(altitudeAccel, DATAPRECISION) + ',' +
-      String(predictApogee(altitude580, altitudeV580,
+      String(predictApogee(altitude, altitudeV,
                            noAirBrakeDragCoef.getData()),
              DATAPRECISION) +
       ',' +
-      String(predictApogee(altitude580, altitudeV580,
+      String(predictApogee(altitude, altitudeV,
                            airBrakeDragCoef.getData()),
              DATAPRECISION) +
       ',' +
@@ -165,13 +169,13 @@ void downwardLogic()
 {
   if ((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) *
           PARACHUTE_TERM_VELOCITY >
-      getAltitude())
+      altitude)
   {
     deployChute();
     parachuteDeployed = true;
   }
 
-  if (getAltitude() < 20.)
+  if (altitude < 20.)
   {
     deployChute();
     parachuteDeployed = true;
@@ -226,8 +230,8 @@ void TaskCore0(void *pvParameters)
         // Serial.print(altitude390,DATAPRECISION);
         // Serial.print(", ");
 
-        Serial.print("BMP580: ");
-        Serial.print(altitude580, DATAPRECISION);
+        Serial.print("BMP581: ");
+        Serial.print(altitude, DATAPRECISION);
         Serial.print(", ");
 
         // Serial.print("BMP390Velo: ");
@@ -241,16 +245,16 @@ void TaskCore0(void *pvParameters)
         // Serial.print("baroAccel: ");
         // Serial.print(altitudeA580,DATAPRECISION);
         // Serial.print(", ");
-        Serial.print("GlobalZaccelBNO: ");
-        Serial.print(myGlobalZAccelBNO, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("GlobalZaccelAdxl: ");
-        Serial.print(myGlobalZAccel, DATAPRECISION);
-        Serial.print(", ");
+        // Serial.print("GlobalZaccelBNO: ");
+        // Serial.print(myGlobalZAccelBNO, DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("GlobalZaccelAdxl: ");
+        // Serial.print(myGlobalZAccel, DATAPRECISION);
+        // Serial.print(", ");
 
-        Serial.print("accelPos: ");
-        Serial.print(myAccelDerrivedPos, DATAPRECISION);
-        Serial.print(", ");
+        // Serial.print("accelPos: ");
+        // Serial.print(myAccelDerrivedPos, DATAPRECISION);
+        // Serial.print(", ");
         // Serial.print("adxlYaccel: ");
         // Serial.print(altitudeAccel,DATAPRECISION);
         // Serial.print(", ");
@@ -266,7 +270,7 @@ void TaskCore0(void *pvParameters)
         break;
 
       case 1: // Pad
-        if (altitude580 > 10)
+        if (altitude > 10)
         {
           flightStateAdvancementTrigger++;
           if (flightStateAdvancementTrigger > 3)
@@ -282,7 +286,7 @@ void TaskCore0(void *pvParameters)
         break;
       case 2: // Ascent/Burnout
         dataLogging();
-        if (myZAccel < 0 || altitudeV580 < 0.5)
+        if (myZAccel < 0 || altitudeV < 0.5)
         {
           flightStateAdvancementTrigger++;
           if (flightStateAdvancementTrigger > 3)
@@ -301,7 +305,7 @@ void TaskCore0(void *pvParameters)
       case 3: // flight
         dataLogging();
 
-        if (altitudeV580 >= 0.5)
+        if (altitudeV >= 0.5)
         {
           if (timeElapsedSinceBurnout < 1000)
           {
@@ -314,19 +318,19 @@ void TaskCore0(void *pvParameters)
           }
           else
           {
-            if (altitude580 > DESIRED_APOGEE)
+            if (altitude > DESIRED_APOGEE)
             {
               openOpenFlap();
             }
 
-            if (predictApogeeIdeal(altitude580, altitudeV580) <
+            if (predictApogeeIdeal(altitude, altitudeV) <
                 DESIRED_APOGEE)
             {
               closeCloseFlap();
             }
             else
             {
-              if (predictApogee(altitude580, altitudeV580,
+              if (predictApogee(altitude, altitudeV,
                                 airBrakeDragCoef.getData()) >=
                   DESIRED_APOGEE)
               {
@@ -352,7 +356,7 @@ void TaskCore0(void *pvParameters)
           }
         }
 
-        if (altitudeV580 < 0.5)
+        if (altitudeV < 0.5)
         {
           flightStateAdvancementTrigger++;
           if (flightStateAdvancementTrigger > 10)
@@ -378,7 +382,7 @@ void TaskCore0(void *pvParameters)
 
         downwardLogic();
 
-        if ((altitudeV580 > -1 && altitudeV580 < 1) ||
+        if ((altitudeV > -1 && altitudeV < 1) ||
             timeElapsed > 100000)
         {
           timesTheRocketIsStill++;
@@ -407,7 +411,7 @@ void TaskCore0(void *pvParameters)
 
 void TaskCore1(void *pvParameters)
 {
-      if (!core1done)
+    if (!core1done)
     {
       getADXLData();
       IMUdata(deltaT);
@@ -449,14 +453,12 @@ void setup()
 
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
 
-  IMU_BNO055setup();
+  bnoSetup();
   adxlSetup();
   Serial.println("ADXL343 Attached");
 
-  Serial.println("Ground Pressure " + (String)getGroundPressure());
-  Serial.println("Ground Temperature " + (String)getGroundTemperature());
-  lastAltitude = pressToAlt(getGroundPressure());
-  lastAltitudeBuiltIn = getAltitude();
+  Serial.println("Ground Pressure " + (String)groundPressure);
+  Serial.println("Ground Temperature " + (String)groundTemperature);
 
   sdSetup();
   writeDataHeader();
@@ -496,6 +498,7 @@ void setup()
 void loop()
 {
   timeStuff();
+  //core1 needs = false after core0
 
   core0done = false;
   core1done = false;
