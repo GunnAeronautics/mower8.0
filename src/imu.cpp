@@ -104,7 +104,9 @@ void IMU_BNO055setup()
         ;
     }
     bno.setExtCrystalUse(true);
-    bno.setMode(OPERATION_MODE_CONFIG);
+    // bno.setMode(OPERATION_MODE_CONFIG);
+    bno.setMode(OPERATION_MODE_NDOF);
+
     delay(25); // Allow sensor to stabilize
     // writeRegister(ACC_CONFIG_REGISTER, 0x0C); // Set range to ±16g
     // Serial.println("Accelerometer set to ±16g range.");
@@ -213,7 +215,9 @@ void IMU_BNO055setup()
     }
 
     imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+
     imu::Vector<3> mag = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
   
     // imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);

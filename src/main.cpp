@@ -197,8 +197,7 @@ float myAccelDerrivedPos;
 
 void TaskCore0(void *pvParameters)
 {
-  for (;;)
-  {
+
     if (!core0done)
     {
       baroDataRead();
@@ -403,15 +402,12 @@ void TaskCore0(void *pvParameters)
 
       core0done = true;
     }
-    vTaskDelay(1);
   }
-}
+
 
 void TaskCore1(void *pvParameters)
 {
-  for (;;)
-  {
-    if (!core1done)
+      if (!core1done)
     {
       getADXLData();
       IMUdata(deltaT);
@@ -440,9 +436,8 @@ void TaskCore1(void *pvParameters)
 
       core1done = true;
     }
-    vTaskDelay(1);
   }
-}
+
 
 void setup()
 {
