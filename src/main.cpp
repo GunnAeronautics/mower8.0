@@ -54,13 +54,16 @@ double dragCoefficient = 0;
 KalmanVelocityEstimator kalman(1, 3);
 RollingAverage noAirBrakeDragCoef(100);
 RollingAverage airBrakeDragCoef(100);
-void timeStuff() {
-  //safety so we don't fuck up
-  if (micros() <= lastT) return; 
+void timeStuff()
+{
+  // safety so we don't fuck up
+  if (micros() <= lastT)
+    return;
 
-  //arbitrary delay
-  while (micros() - lastT < 6000) {
-    delayMicroseconds(10); 
+  // arbitrary delay
+  while (micros() - lastT < 6000)
+  {
+    delayMicroseconds(10);
   }
 
   unsigned long now = micros();
@@ -69,20 +72,25 @@ void timeStuff() {
 
   unsigned long currentMillis = millis();
 
-  if (flightState = 0){  //debug mode
+  if (flightState = 0)
+  { // debug mode
     timeElapsed = currentMillis;
   }
-  else if (startTimeStamp == 0) {  //flight standby
-      timeElapsed = 0;
+  else if (startTimeStamp == 0)
+  { // flight standby
+    timeElapsed = 0;
   }
-  else {  //during flight
-      timeElapsed = currentMillis - startTimeStamp;
+  else
+  { // during flight
+    timeElapsed = currentMillis - startTimeStamp;
   }
 
-  if (burnoutTimeStamp = 0) { //before burnout
+  if (burnoutTimeStamp = 0)
+  { // before burnout
     timeElapsedSinceBurnout = 0;
   }
-  else {//after burnout
+  else
+  { // after burnout
     timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
   }
 }
@@ -198,115 +206,14 @@ float myGlobalZAccelBNO;
 float myZAccel;
 float myAccelDerrivedPos;
 
-
 void TaskCore0(void *pvParameters)
 {
-  while (true){
+  while (true)
+  {
     if (!core0done)
     {
-      core0done = true;
 
-    }
-
-  }
-}
-
-void TaskCore1(void *pvParameters)
-{
-    if (!core1done)
-    {
-        // only integrate if we are actually flying or testing
-      if ((flightState >= 2 && flightState < 5) || flightState == 0) 
-      {
-          // float currentGZ = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
-          
-          // // Velocity integration
-          // accelVelo += (zGlobalAccel - accelErrorToZeroVelo) * deltaT / 1000000.0;
-          // accelVeloADXL += (currentGZ - accelErrorToZeroVeloADXL) * deltaT / 1000000.0;
-          
-          // // Position integration1000000
-          // accelPos += accelVeloADXL * deltaT / .0;
-          accelVelo = 0;
-          accelVeloADXL = 0;
-          accelPos = 0;
-
-      } 
-      else 
-      {
-          // zero if on pad or landed
-          accelVelo = 0;
-          accelVeloADXL = 0;
-          accelPos = 0;
-      }
-
-      // clamp
-      if (accelVelo > 100 || accelVelo < -100) accelVelo = 0;
-
-      core1done = true;
-    }
-  }
-
-
-void setup()
-{
-  Serial.begin(115200);
-  Serial.println("Serial Begin");
-
-  baroSetup();
-  Serial.println("Barometric Sensor Setup Complete");
-
-  Wire.begin(ADXL343_SDA, ADXL343_SCL);
-
-  bnoSetup();
-  adxlSetup();
-  Serial.println("ADXL343 Attached");
-
-  Serial.println("Ground Pressure " + (String)groundPressure);
-  Serial.println("Ground Temperature " + (String)groundTemperature);
-
-  sdSetup();
-  writeDataHeader();
-  closeSD();
-  openOpenSD();
-
-  servoSetup();
-  lastT = micros();
-  Serial.println("start");
-  delay(5000);
-
-  for (int i = 0; i < 10; i++)
-  {
-    timeStuff();
-    IMUdata(deltaT);
-    getADXLData();
-    delay(100);
-  }
-
-  accelErrorToZeroVelo = zGlobalAccel;
-  accelErrorToZeroVeloADXL =
-      axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
-
-  Serial.print("accel Zero :");
-  Serial.println(accelErrorToZeroVelo);
-  delay(1000);
-
-  // xTaskCreatePinnedToCore(TaskCore0, "Task0", 10000, NULL, 1, NULL, 1);
-  // xTaskCreatePinnedToCore(TaskCore1, "Task1", 10000, NULL, 1, NULL, 1);
-
-  lastT = micros();
-
-  pinMode(2, OUTPUT); // blue LED
-  digitalWrite(2, HIGH);
-}
-
-void loop()
-{
-  timeStuff();
-  //core1 needs = false after core0
-  getADXLData();
-  IMUdata(deltaT);
-
-        baroDataRead();
+      baroDataRead();
       altitudeProcessing(deltaT);
 
       switch (flightState)
@@ -317,7 +224,7 @@ void loop()
 //   closeSD();
 // }
 #pragma region
-        // dataLogging();
+              // dataLogging();
         //
         // dataLogging();
         // closeSD();
@@ -337,7 +244,7 @@ void loop()
         Serial.print(", ");
 
         Serial.print("BMPVelo: ");
-        Serial.print(altitudeV,DATAPRECISION);
+        Serial.print(altitudeV, DATAPRECISION);
         Serial.print(", ");
 
         // Serial.print("BMP580Velo: ");
@@ -345,7 +252,7 @@ void loop()
         // Serial.print(",");
 
         Serial.print("baroAccel: ");
-        Serial.print(altitudeA,DATAPRECISION);
+        Serial.print(altitudeA, DATAPRECISION);
         Serial.print(", ");
         // Serial.print("GlobalZaccelBNO: ");
         // Serial.print(myGlobalZAccelBNO, DATAPRECISION);
@@ -367,8 +274,8 @@ void loop()
 
         Serial.println();
 
-          // Serial.println(deltaT);
-          #pragma endregion
+// Serial.println(deltaT);
+#pragma endregion
         break;
 
       case 1: // Pad
@@ -506,6 +413,116 @@ void loop()
         break;
       }
 
+      core0done = true;
+    }
+    core0done = true;
+  }
+  vTaskDelay(1);
+}
+
+void TaskCore1(void *pvParameters)
+{
+  while (true)
+  {
+    if (!core1done)
+    {
+      getADXLData();
+      IMUdata(deltaT);
+      // only integrate if we are actually flying or testing
+      if (flightState >= 2 && flightState < 5 || flightState == 0)
+      {
+        float currentGZ = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
+
+        // Velocity integration
+        accelVelo += (zGlobalAccel - accelErrorToZeroVelo) * deltaT / 1000000.0;
+        accelVeloADXL += (currentGZ - accelErrorToZeroVeloADXL) * deltaT / 1000000.0;
+
+        // Position integration
+        accelPos += accelVeloADXL * deltaT / 1000000.0;
+      }
+      else
+      {
+        // zero if on pad or landed
+        accelVelo = 0;
+        accelVeloADXL = 0;
+        accelPos = 0;
+      }
+
+      // clamp
+      if (accelVelo > 100 || accelVelo < -100)
+        accelVelo = 0;
+
+      core1done = true;
+    }
+
+    vTaskDelay(1);
+  }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println("Serial Begin");
+
+  baroSetup();
+  Serial.println("Barometric Sensor Setup Complete");
+
+  Wire.begin(ADXL343_SDA, ADXL343_SCL);
+
+  bnoSetup();
+  adxlSetup();
+  Serial.println("ADXL343 Attached");
+
+  Serial.println("Ground Pressure " + (String)groundPressure);
+  Serial.println("Ground Temperature " + (String)groundTemperature);
+
+  sdSetup();
+  writeDataHeader();
+  closeSD();
+  openOpenSD();
+
+  servoSetup();
+  lastT = micros();
+  Serial.println("start");
+  delay(5000);
+
+  for (int i = 0; i < 10; i++)
+  {
+    timeStuff();
+    IMUdata(deltaT);
+    getADXLData();
+    delay(100);
+  }
+
+  accelErrorToZeroVelo = zGlobalAccel;
+  accelErrorToZeroVeloADXL =
+      axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
+
+  Serial.print("accel Zero :");
+  Serial.println(accelErrorToZeroVelo);
+  delay(1000);
+
+  xTaskCreatePinnedToCore(TaskCore0, "Task0", 10000, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(TaskCore1, "Task1", 10000, NULL, 1, NULL, 1);
+
+  lastT = micros();
+
+  pinMode(2, OUTPUT); // blue LED
+  digitalWrite(2, HIGH);
+}
+
+void loop()
+{
+  timeStuff();
+  // core1 needs = false after core0
+
+  while (!core0done || !core1done)
+  {
+    delayMicroseconds(10);
+  }
+
+  core0done = false;
+  core1done = false;
 
   myGlobalZAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
   myZAccel = zAccel;
