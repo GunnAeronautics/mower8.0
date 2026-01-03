@@ -454,7 +454,24 @@ void TaskCore1(void *pvParameters)
 
       core1done = true;
     }
+    else
+    {
+      timeStuff();
+      // core1 needs = false after core0
 
+      while (!core0done || !core1done)
+      {
+        delayMicroseconds(10);
+      }
+
+      core0done = false;
+      core1done = false;
+
+      myGlobalZAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
+      myZAccel = zAccel;
+      myAccelDerrivedPos = accelPos;
+      myGlobalZAccelBNO = zGlobalAccel;
+    }
     vTaskDelay(1);
   }
 }
@@ -509,26 +526,11 @@ void setup()
 
   pinMode(2, OUTPUT); // blue LED
   digitalWrite(2, HIGH);
+
+  vTaskDelete(NULL); // kill the unused loop, serialEvent is gone
 }
 
-void loop()
-{
-  timeStuff();
-  // core1 needs = false after core0
-
-  while (!core0done || !core1done)
-  {
-    delayMicroseconds(10);
-  }
-
-  core0done = false;
-  core1done = false;
-
-  myGlobalZAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
-  myZAccel = zAccel;
-  myAccelDerrivedPos = accelPos;
-  myGlobalZAccelBNO = zGlobalAccel;
-}
+void loop() {} //make some hardcoded stuff happy
 
 // wow looks like the code is super neat < 200 lines woaw
 /*
