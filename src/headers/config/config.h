@@ -47,10 +47,11 @@
 #define CONFIG_MODE 0x00
 #define ACCONLY_MODE 0x01
 #define ACC_CONFIG_REGISTER 0x08
-
+#define BNO_ADDRESS 0x28
 // ============================================================================
 // PHYSICAL CONSTANTS
 // ============================================================================
+// up is positive y axis
 
 #define GRAVITY 9.81  // m/s^2
 

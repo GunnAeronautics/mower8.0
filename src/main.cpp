@@ -230,36 +230,36 @@ void TaskCore0(void *pvParameters)
         // closeSD();
         // openOpenSD();
 
-        Serial.print(">");
-        Serial.print("DeltaT: ");
-        Serial.print(deltaT);
-        Serial.print(", ");
-
-        // Serial.print("BMP390: ");
-        // Serial.print(altitude390,DATAPRECISION);
+        // Serial.print(">");
+        // Serial.print("DeltaT: ");
+        // Serial.print(deltaT);
         // Serial.print(", ");
 
-        Serial.print("BMP581: ");
-        Serial.print(altitude, DATAPRECISION);
-        Serial.print(", ");
+        // // Serial.print("BMP390: ");
+        // // Serial.print(altitude390,DATAPRECISION);
+        // // Serial.print(", ");
 
-        Serial.print("BMPVelo: ");
-        Serial.print(altitudeV, DATAPRECISION);
-        Serial.print(", ");
-
-        // Serial.print("BMP580Velo: ");
-        // Serial.print(altitudeV580,DATAPRECISION);
-        // Serial.print(",");
-
-        Serial.print("baroAccel: ");
-        Serial.print(altitudeA, DATAPRECISION);
-        Serial.print(", ");
-        // Serial.print("GlobalZaccelBNO: ");
-        // Serial.print(myGlobalZAccelBNO, DATAPRECISION);
+        // Serial.print("BMP581: ");
+        // Serial.print(altitude, DATAPRECISION);
         // Serial.print(", ");
-        Serial.print("GlobalZaccelAdxl: ");
-        Serial.print(myGlobalZAccel, DATAPRECISION);
-        Serial.print(", ");
+
+        // Serial.print("BMPVelo: ");
+        // Serial.print(altitudeV, DATAPRECISION);
+        // Serial.print(", ");
+
+        // // Serial.print("BMP580Velo: ");
+        // // Serial.print(altitudeV580,DATAPRECISION);
+        // // Serial.print(",");
+
+        // Serial.print("baroAccel: ");
+        // Serial.print(altitudeA, DATAPRECISION);
+        // Serial.print(", ");
+        // // Serial.print("GlobalZaccelBNO: ");
+        // // Serial.print(myGlobalZAccelBNO, DATAPRECISION);
+        // // Serial.print(", ");
+        // Serial.print("GlobalZaccelAdxl: ");
+        // Serial.print(myGlobalZAccel, DATAPRECISION);
+        // Serial.print(", ");
 
         // Serial.print("accelPos: ");
         // Serial.print(myAccelDerrivedPos, DATAPRECISION);
@@ -279,7 +279,7 @@ void TaskCore0(void *pvParameters)
         break;
 
       case 1: // Pad
-        if (altitude > 10)
+        if (altitudeAccel > 10)
         {
           flightStateAdvancementTrigger++;
           if (flightStateAdvancementTrigger > 3)
@@ -434,8 +434,8 @@ void TaskCore1(void *pvParameters)
         float currentGZ = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+");
 
         // Velocity integration
-        accelVelo += (zGlobalAccel - accelErrorToZeroVelo) * deltaT / 1000000.0;
-        accelVeloADXL += (currentGZ - accelErrorToZeroVeloADXL) * deltaT / 1000000.0;
+        accelVelo += (zGlobalAccel - 9.81) * deltaT / 1000000.0;
+        accelVeloADXL += (currentGZ - 9.81) * deltaT / 1000000.0;
 
         // Position integration
         accelPos += accelVeloADXL * deltaT / 1000000.0;
