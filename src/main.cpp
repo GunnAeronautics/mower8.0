@@ -54,8 +54,7 @@ double dragCoefficient = 0;
 double integratedAltitude = 0;
 double integratedVelocity = 0;
 KalmanVelocityEstimator kalman(1, 3);
-RollingAverage noAirBrakeDragCoef(100);
-RollingAverage airBrakeDragCoef(100);
+// RollingAverage airBrakeDragCoef(100);
 float accelVelo = 0;
 float accelVeloADXL = 0;
 float predAlt = 0;
@@ -65,6 +64,8 @@ unsigned long lastAirBrakeRetractTime = 0;
 float maxAltitude = 0;
 
 double noAirbrakeDragCoef = 0.0021665;
+double AirbrakeDragCoef = 0.0021665*2;
+
 // everything related to timing
 void timeStuff()
 {
@@ -140,14 +141,14 @@ float dragCoefProcessing(){
     if (dragFlapDeployed == false &&
         lastAirBrakeRetractTime < millis() - DRAG_FLAP_MOVE_TIME)//switch back to main altitude
     { //sufficient time has passed so we can start taking measurements for the rolling avwerage
-      noAirBrakeDragCoef.newData(dragCoefficient);
       accelerometerTime = false;
     }
 
     if (dragFlapDeployed &&
         lastAirBrakeDeployTime < millis() - DRAG_FLAP_MOVE_TIME)
     { //sufficient time has passed so we can start taking measurements for the rolling avwerage
-      airBrakeDragCoef.newData(dragCoefficient);
+    
+      // airBrakeDragCoef.newData(dragCoefficient);
     }
   
 
@@ -221,7 +222,7 @@ void dataLogging()
       String(-yAccel-GRAVITY, DATAPRECISION) + ',' +  // localAxis
 
       String(dragCoefficient, DATAPRECISION) + ',' +
-      String(predictApogee(altitude, altitudeV,noAirbrakeDragCoef),DATAPRECISION) + ',' +  // apogee prediction
+      String(predictApogee(altitude, altitudeV,dragCoefficient),DATAPRECISION) + ',' +  // apogee prediction
       String(predictApogee(altitude, altitudeV, 0.0069),DATAPRECISION) + ',' +  // apogee prediction
 
       (String)(parachuteDeployed*100) + ',' +
@@ -325,7 +326,6 @@ void loop() {
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
-  deployChute();
   if (accelerometerTime){
     altitude = integratedAltitude;
     altitudeV = integratedVelocity;
@@ -440,7 +440,7 @@ void loop() {
     //safety altitude is above 2 meters
 
 
-    if (altitudeAccel > 30.0f || altitude > 2.0f)//make sure the altitude accel axis is correct
+    if (altitudeAccel > 30.0f || altitude > 3.0f)//make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
@@ -505,38 +505,38 @@ void loop() {
     }
     else{flightStateAdvancementTrigger = 0;}
 
-    //SAFETY CODE
-    //_____________________________________________________________________________________________________________
-    //if we are above the desired altitude deploy the flaps (very simple logic)
-    if (altitude > DESIRED_APOGEE)
-      {openOpenFlap();break;}
-    //if we ever need to do this we probably messed up real bad
-    //this is just here to save a few points
+    // //SAFETY CODE
+    // //_____________________________________________________________________________________________________________
+    // //if we are above the desired altitude deploy the flaps (very simple logic)
+    // if (altitude > DESIRED_APOGEE)
+    //   {openOpenFlap();break;}
+    // //if we ever need to do this we probably messed up real bad
+    // //this is just here to save a few points
 
-    //if perfect kinematic predictions say we are below the desired altitude
-    //we retract the flaps (somewhat simple logic)
-    if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
-      {closeCloseFlap();break;}
-    //if we ever need to rely on this we're probably cooked
-    //this is just here to save a few points
-    //_____________________________________________________________________________________________________________
+    // //if perfect kinematic predictions say we are below the desired altitude
+    // //we retract the flaps (somewhat simple logic)
+    // if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
+    //   {closeCloseFlap();break;}
+    // //if we ever need to rely on this we're probably cooked
+    // //this is just here to save a few points
+    // //_____________________________________________________________________________________________________________
 
 
-    //stuff right after burnout
-    if (timeElapsedSinceBurnout < 1000)
-    {
-      closeCloseFlap();
-      break;
-    }
-    else if (timeElapsedSinceBurnout < 2000)
-      {openOpenFlap();break;}
+    // //stuff right after burnout
+    // if (timeElapsedSinceBurnout < 1000)
+    // {
+    //   closeCloseFlap();
+    //   break;
+    // }
+    // else if (timeElapsedSinceBurnout < 2000)
+    //   {openOpenFlap();break;}
 
-    // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
-    // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
-    if (predictApogee(altitude, altitudeV, airBrakeDragCoef.getData()) >= DESIRED_APOGEE)
-      {openOpenFlap();}
-    else //im sure this will never be the case
-      {closeCloseFlap();}
+    // // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
+    // // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
+    // if (predictApogee(altitude, altitudeV, airBrakeDragCoef.getData()) >= DESIRED_APOGEE)
+    //   {openOpenFlap();}
+    // else //im sure this will never be the case
+    //   {closeCloseFlap();}
     
 
 
