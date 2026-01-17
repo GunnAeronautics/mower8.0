@@ -121,7 +121,7 @@ float coefOfDrag(float accel, float v) {
   return coef;
 }
 bool accelerometerTime = false;
-float dragCoefProcessing(){
+void dragCoefProcessing(){
     dragCoefficient = coefOfDrag(altitudeAccel,altitudeV);
     //airbrake deployed for first time
     if (lastDragFlapDeployed == false && dragFlapDeployed == true){
