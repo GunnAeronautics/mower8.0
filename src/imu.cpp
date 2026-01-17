@@ -217,6 +217,7 @@ void IMU_BNO055setup()
     AccX = accel.x();
     AccY = -accel.y();//put negative side if servos are on top
     AccZ = accel.z();
+    GyroY = gyro.y();
     bno.getCalibration(&systemCali,&gyroCali,&accelCali,&magCali);
     // Serial.print(zenith);
     // Serial.print(", ");
