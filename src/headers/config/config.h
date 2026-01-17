@@ -61,16 +61,19 @@
 // ============================================================================
 
 // Apogee and flight time targets (TARC competition specifications)
-#define DESIRED_APOGEE 240.792        // m (790 ft specified by TARC guidelines)
-#define DESIRED_FLIGHT_TIME 42500     // milliseconds (41-44 sec regulation 2025)
-
+#define DESIRED_APOGEE 228.6        // m (750 ft specified by TARC guidelines)
+#define DESIRED_FLIGHT_TIME 37500     // milliseconds (36-37 sec regulation 2026)
+//WARNING DOES NOT ACCOUNT FOR THE BOTTOM SECTION BEING LOWER
+//WARNING DOES NOT ACCOUNT FOR THE 
 // Parachute and drag flap configuration
 #define PARACHUTE_TERM_VELOCITY 6.5 // m/s
+//WARNING THIS IS FROM OPENROCKET 1/17/26
+
 #define COEF_DRAG_FLAPDEPLOYED 0.002213 // accelY / v / v of the rocket when flaps fully deployed
 
 // Servo deployment angles
 #define DRAG_FLAPS_DEPLOYED_ANGLE 180
-#define DRAG_FLAPS_UNDEPLOYED_ANGLE 0
+#define DRAG_FLAPS_UNDEPLOYED_ANGLE 10
 //in ms
 #define DRAG_FLAP_MOVE_TIME 500
 #define PARACHUTE_DEPLOYED_ANGLE 180
