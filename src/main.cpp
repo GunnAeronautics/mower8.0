@@ -9,7 +9,7 @@
 #include "headers/config/config.h"
 
 // Homebrew libraries:
-#include "headers/math/KalmanVelocityEstimator.h"
+// #include "headers/math/KalmanVelocityEstimator.h"
 #include "headers/sensors/adxl.h"
 #include "headers/sensors/bmpxxx.h"
 #include "headers/sensors/imu.h"
@@ -41,7 +41,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
@@ -53,7 +53,7 @@ float altitudeV = 0;
 double dragCoefficient = 0;
 double integratedAltitude = 0;
 double integratedVelocity = 0;
-KalmanVelocityEstimator kalman(1, 3);
+// KalmanVelocityEstimator kalman(1, 3);
 // RollingAverage airBrakeDragCoef(100);
 float accelVelo = 0;
 float accelVeloADXL = 0;
