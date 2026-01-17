@@ -21,10 +21,10 @@ int angleToBlink(double power){// scale of 0 to 90
   }
 
 void deployChute(){
-    servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
+    servo4.write(PARACHUTE_DEPLOYED_ANGLE);//for drag flaps
   }
 void undeployChute(){
-    servo4.write(PARACHUTE_DEPLOYED_ANGLE);
+    servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);
 }
 void moveFlaps(int power){
     servo2.write(angleToBlink(power));

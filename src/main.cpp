@@ -183,7 +183,7 @@ void writeDataHeader(){
   "yAxisAccel,"
   "drag coef,"
   "noAirbrake PredApogee,"
-  "airbrake PredApogee"
+  "airbrake PredApogee,"
 
   "Chute Deployed,"
   "dragFlaps deployed,"
@@ -224,10 +224,10 @@ void dataLogging()
       String(predictApogee(altitude, altitudeV,noAirbrakeDragCoef),DATAPRECISION) + ',' +  // apogee prediction
       String(predictApogee(altitude, altitudeV, 0.0069),DATAPRECISION) + ',' +  // apogee prediction
 
-      (String)parachuteDeployed + ',' +
-      (String)dragFlapDeployed + ',' +
-      (String)accelerometerTime + ',' +
-      (String)flightState + ',' +
+      (String)(parachuteDeployed*100) + ',' +
+      (String)(dragFlapDeployed*100) + ',' +
+      (String)(accelerometerTime*100) + ',' +
+      (String)(flightState*100) + ',' +
 
       String(zenith, DATAPRECISION) + ',' +  // localAxis
       String(GyroY, DATAPRECISION) + ',' +  // 
@@ -325,6 +325,7 @@ void loop() {
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
+  deployChute();
   if (accelerometerTime){
     altitude = integratedAltitude;
     altitudeV = integratedVelocity;
@@ -356,7 +357,7 @@ void loop() {
   {
   case 0: // happy data printing mode
     dataLogging();
-    if (altitude580 > 0.4){
+    if (timeElapsed > 600000){
       closeSD();
       integratedVelocity = altitudeV;
       integratedAltitude = altitude;
@@ -405,12 +406,12 @@ void loop() {
     // Serial.print("GlobalZaccelAdxl: ");
     // Serial.print(axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+"),DATAPRECISION);
     // Serial.print(", ");
-    Serial.print("veloIntegrated: ");
-    Serial.print(integratedVelocity,DATAPRECISION);
-    Serial.print(", ");
-    Serial.print("altitudeIntegrated: ");
-    Serial.print(integratedAltitude,DATAPRECISION);
-    Serial.print(", ");
+    // Serial.print("veloIntegrated: ");
+    // Serial.print(integratedVelocity,DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("altitudeIntegrated: ");
+    // Serial.print(integratedAltitude,DATAPRECISION);
+    // Serial.print(", ");
     // Serial.print("adxlYaccel: ");
     // Serial.print(altitudeAccel,DATAPRECISION);
     // Serial.print(", ");
@@ -437,12 +438,17 @@ void loop() {
     Serial.println();
     //detects launch if accel is above 50 m/s^2
     //safety altitude is above 2 meters
-    if (altitudeAccel > 30 || altitude > 10)//make sure the altitude accel axis is correct
+
+
+    if (altitudeAccel > 30.0f || altitude > 2.0f)//make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
       {
         startTimeStamp = millis();
+        integratedVelocity = altitudeV;
+        integratedAltitude = altitude;
+
         flightState++;
       }
     }
@@ -466,6 +472,8 @@ void loop() {
       if (flightStateAdvancementTrigger > 3)
       {
         burnoutTimeStamp = millis();
+        closeSD();
+        openOpenSD();
         flightState++;
         flightStateAdvancementTrigger = 0;
       }
@@ -482,7 +490,7 @@ void loop() {
 
     //velocity less than 0.5 means the rocket is going down
     //timeElasped over 10 sec is safety
-    if (altitudeV < 0.5 || timeElapsed > 10000){
+    if (altitudeV <0.5  || timeElapsed > 10000){
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10)//ok lets start the descent
       {
@@ -497,21 +505,21 @@ void loop() {
     }
     else{flightStateAdvancementTrigger = 0;}
 
-    // //SAFETY CODE
-    // //_____________________________________________________________________________________________________________
-    // //if we are above the desired altitude deploy the flaps (very simple logic)
-    // if (altitude > DESIRED_APOGEE)
-    //   {openOpenFlap();break;}
-    // //if we ever need to do this we probably messed up real bad
-    // //this is just here to save a few points
+    //SAFETY CODE
+    //_____________________________________________________________________________________________________________
+    //if we are above the desired altitude deploy the flaps (very simple logic)
+    if (altitude > DESIRED_APOGEE)
+      {openOpenFlap();break;}
+    //if we ever need to do this we probably messed up real bad
+    //this is just here to save a few points
 
-    // //if perfect kinematic predictions say we are below the desired altitude
-    // //we retract the flaps (somewhat simple logic)
-    // if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
-    //   {closeCloseFlap();break;}
-    // //if we ever need to rely on this we're probably cooked
-    // //this is just here to save a few points
-    // //_____________________________________________________________________________________________________________
+    //if perfect kinematic predictions say we are below the desired altitude
+    //we retract the flaps (somewhat simple logic)
+    if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
+      {closeCloseFlap();break;}
+    //if we ever need to rely on this we're probably cooked
+    //this is just here to save a few points
+    //_____________________________________________________________________________________________________________
 
 
     //stuff right after burnout
@@ -525,10 +533,10 @@ void loop() {
 
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
-    // if (predictApogee(altitude, altitudeV, airBrakeDragCoef.getData()) >= DESIRED_APOGEE)
-    //   {openOpenFlap();}
-    // else //im sure this will never be the case
-    //   {closeCloseFlap();}
+    if (predictApogee(altitude, altitudeV, airBrakeDragCoef.getData()) >= DESIRED_APOGEE)
+      {openOpenFlap();}
+    else //im sure this will never be the case
+      {closeCloseFlap();}
     
 
 
