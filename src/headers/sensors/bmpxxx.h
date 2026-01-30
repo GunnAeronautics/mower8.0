@@ -17,8 +17,8 @@ extern double altitudeV580;
 extern double lastAltitudeV580;
 extern double altitudeA580;
 
-extern double newAltitude580;
-extern double newAltitude390;
+extern float newAltitude580;
+extern float newAltitude390;
 
 // ============================================================================
 // INITIALIZATION AND SETUP

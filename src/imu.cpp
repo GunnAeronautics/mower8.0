@@ -1,7 +1,7 @@
 #include "headers/sensors/imu.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
-#define IMU_DEBUG
+// #define IMU_DEBUG
 #ifdef BNO055
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29, &Wire);
 uint8_t systemCali,gyroCali,accelCali,magCali;
@@ -16,7 +16,7 @@ Quaternion bnoOrientation;
 double MagX, MagY, MagZ;    // Gs
 
 double GyroX, GyroY, GyroZ; // deg / sec
-double accelBnoX, accelBnoY, accelBnoZ;   // in m/s^2
+float accelBnoX, accelBnoY, accelBnoZ;   // in m/s^2
 double accelBnoLinearX, accelBnoLinearY, accelBnoLinearZ;    // in m/s^2
 double zGlobalAccel,yGlobalAccel,xGlobalAccel; // in m/s^2
 
@@ -158,7 +158,7 @@ void bnoSetup()
   }
   
   Quaternion getQuat(){
-    return bnoOrientation;;
+    return bnoOrientation;
   }
 
   #ifdef BNO055
@@ -255,63 +255,66 @@ void bnoSetup()
 
       // is it the correct sensor data we want?
       if (bno.getSensorEventID() == SENSOR_REPORTID_ROTATION_VECTOR) {
-        bnoW = bno.getQuatI();
+        bnoW = bno.getQuatReal();
         bnoI = bno.getQuatI();
         bnoJ = bno.getQuatJ();
         bnoK = bno.getQuatK();
         bnoOrientation.setQuat(bnoW,bnoI,bnoJ,bnoK);
+        uint8_t accuracyThing;
+        accelBnoX = bno.getAccelX();
         accelBnoY = bno.getAccelY();
+        accelBnoZ = bno.getAccelZ();
         accelBnoLinearY = bno.getLinAccelY();
 
         GyroY = bno.getGyroY();
         bno.getAccelAccuracy();
 
         double quatRadianAccuracy = bno.getQuatRadianAccuracy();
-        zGlobalAccel = axisComponent(bnoOrientation, bno.getAccelX(), bno.getAccelY(), bno.getAccelZ(), "Z+");
+        zGlobalAccel = axisComponent(bnoOrientation, accelBnoX, accelBnoY, accelBnoZ, "Z+");
         // writeZGlobalAccel(newZGlobalAccel);
 
         zenith = angleBetweenAxis(bnoOrientation,"Y+");
         
         #ifdef IMU_DEBUG
-        Serial.print("Quaternion: ");
-        Serial.print(bnoW);
-        Serial.print(", ");
-        Serial.print(bnoI);
-        Serial.print(", ");
-        Serial.print(bnoJ);
-        Serial.print(", ");
-        Serial.print(bnoK);
-        Serial.println();
-
-        // Serial.print(">");
-        // Serial.print("DeltaT: ");
-        // Serial.print(deltaT);
+        // Serial.print("Quaternion: ");
+        // Serial.print(bnoW);
         // Serial.print(", ");
-        // Serial.print("Accel: ");
-        // Serial.print(accelBnoY, DATAPRECISION);
+        // Serial.print(bnoI);
         // Serial.print(", ");
-        // Serial.print("LinAccel: ");
-        // Serial.print(accelBnoLinearY, DATAPRECISION);
+        // Serial.print(bnoJ);
         // Serial.print(", ");
-        // Serial.print("GlobalAccel: ");
-        // Serial.print(zGlobalAccel, DATAPRECISION);
-        // Serial.print(", ");
-        // Serial.print("zenith: ");
-        // Serial.print(zenith, DATAPRECISION);
-        // Serial.print(", ");
-        // Serial.print("Roll rate: ");
-        // Serial.print(GyroY, DATAPRECISION);
-        // Serial.print(", ");
-        // Serial.print("Accel accuracy: ");
-        // Serial.print(bno.getAccelAccuracy(), DATAPRECISION);
-        // Serial.print(", ");
-        // Serial.print("Lin Accel accuracy: ");
-        // Serial.print(bno.getLinAccelAccuracy(), DATAPRECISION);
-        // Serial.print(", ");
-        // Serial.print("gyro accuracy: ");
-        // Serial.print(bno.getGyroAccuracy(), DATAPRECISION);
-        // Serial.print(", ");
+        // Serial.print(bnoK);
         // Serial.println();
+
+        Serial.print(">");
+        Serial.print("DeltaT: ");
+        Serial.print(deltaT);
+        Serial.print(", ");
+        Serial.print("Accel: ");
+        Serial.print(accelBnoY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("LinAccel: ");
+        Serial.print(accelBnoLinearY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("GlobalAccel: ");
+        Serial.print(zGlobalAccel, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("zenith: ");
+        Serial.print(zenith, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("Roll rate: ");
+        Serial.print(GyroY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("Accel accuracy: ");
+        Serial.print(bno.getAccelAccuracy(), DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("Lin Accel accuracy: ");
+        Serial.print(bno.getLinAccelAccuracy(), DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("gyro accuracy: ");
+        Serial.print(bno.getGyroAccuracy(), DATAPRECISION);
+        Serial.print(", ");
+        Serial.println();
         #endif
       }
     }

@@ -1,5 +1,7 @@
 #include "headers/sensors/bmpxxx.h"
 #include <Adafruit_BMP5xx.h>
+#include <stdexcept>
+
 
 Adafruit_BMP5xx bmp581;
 SPIClass mySPI;
@@ -8,10 +10,10 @@ SPIClass mySPI;
 RollingAverage pressureRoll(8);
 RollingAverage temperatureRoll(8);
 
-RollingAverage altitudeVRoll(3);
+RollingAverage altitudeVRoll(6);
 // Raw sensor data
-double groundPressure = 0;
-double groundTemperature = 0;
+float groundPressure = 0;
+float groundTemperature = 0;
 
 
 
@@ -22,8 +24,8 @@ float temp_390 = 0, pressure_390 = 0;
 float temp_580 = 0, pressure_580 = 0;
 double altitude390 = 0;
 double altitude580 = 0;
-double newAltitude580 = 0;
-double newAltitude390 = 0;
+float newAltitude580 = 0;
+float newAltitude390 = 0;
 
 double altitudeV390;
 double altitudeV580;
@@ -83,7 +85,9 @@ void baroDataRead()
   if (bmp581.performReading()) {
     temp_580 = bmp581.temperature;
     pressure_580 = bmp581.pressure; // pressure read in hPa
-  
+    temperatureRoll.newData(temp_580);
+    pressureRoll.newData(pressure_580);
+
 
   } else {
     Serial.println("BMP580 failed to perform reading!");
@@ -91,8 +95,6 @@ void baroDataRead()
 
   // ---- Combine results ----
 
-  temperatureRoll.newData(temp_580);
-  pressureRoll.newData(pressure_580);
   
 }
 
@@ -103,23 +105,26 @@ void baroDataRead()
 void altitudeProcessing(int deltaT)
 {
 
-  
+  // if ( pressure_580 == NAN ) {
+  //       throw std::invalid_argument("Value cannot be Nan");
+  // }
+
   // altitude390 = pressToAlt390(pressure_390);
   altitude580 = pressToAlt(pressure_580);
-  
   // newAltitude390 = newPressToAlt390(pressure_390);
   newAltitude580 = newPressToAlt580(pressure_580);
+  
 
 
   // altitudeVRoll390.newData((altitude390 - lastAltitude390) / deltaT * 1000000);
   altitudeVRoll.newData((newAltitude580 - lastAltitude580) / deltaT * 1000000);
 
   // altitudeV390 = altitudeVRoll390.getData();
-  newAltitude580 = altitudeVRoll.getData();
+  altitudeV580 = altitudeVRoll.getData();
   
   altitudeA580 = ((newAltitude580-lastAltitudeV580) / deltaT * 1000000);
 
-  lastAltitudeV580 = lastAltitudeV580;
+  lastAltitudeV580 = altitudeV580;
   lastAltitude580 = newAltitude580;
 
 }
@@ -141,7 +146,7 @@ float newPressToAlt390(float pres)
 }
 float newPressToAlt580(float pres)
 {
-  return (float)(44330.0 * (1.0 - pow(pres / groundPressure, 0.1903)));
+  return 44330.0 * (1.0 - pow((pres / groundPressure), 0.1903));
 }
 
 float getGroundPressure()

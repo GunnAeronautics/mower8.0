@@ -4,7 +4,7 @@
 //
 #include <Arduino.h>
 #include <math.h>
-#include <SimpleKalmanFilter.h>
+// #include <SimpleKalmanFilter.h>
 
 // Configuration and constants
 #include "headers/config/config.h"
@@ -42,7 +42,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
@@ -182,17 +182,16 @@ void writeDataHeader(){
   "Alt,"
   "integratedAlt,"
   "baroAlt580,"
-  "baroAlt390,"
-  "mewbaroAlt580,"
-  "newbaroAlt390,"
 
   "velocity,"
   "integratedVelo,"
-
   "baroVelo,"
+
   "altitudeAccel,"
   "bnoGlobalAccel,"
   "yAxisAccel,"
+
+
   "drag coef,"
   "noAirbrake PredApogee,"
   "airbrake PredApogee,"
@@ -221,12 +220,8 @@ void dataLogging()
       String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' + // temp
 
       String(altitude, DATAPRECISION) + ',' +    // alt
-
       String(integratedAltitude) + ',' +    // alt
       String(altitude580) + ',' +    // alt
-      String(altitude390) + ',' +    // alt
-      String(newAltitude580, DATAPRECISION) + ',' +    // alt
-      String(newAltitude390, DATAPRECISION) + ',' +    // alt
 
       String(altitudeV, DATAPRECISION) + ',' +   // velocity - baro derived
       String(integratedVelocity, DATAPRECISION) + ',' +    // alt
@@ -238,7 +233,7 @@ void dataLogging()
 
       String(dragCoefficient, DATAPRECISION) + ',' +
       String(predictApogee(altitude, altitudeV,dragCoefficient),DATAPRECISION) + ',' +  // apogee prediction
-      String(predictApogee(altitude, altitudeV, 0.0069),DATAPRECISION) + ',' +  // apogee prediction
+      String(predictApogee(altitude, altitudeV, COEF_DRAG_FLAPDEPLOYED),DATAPRECISION) + ',' +  // apogee prediction
 
       (String)(parachuteDeployed*100) + ',' +
       (String)(dragFlapDeployed*100) + ',' +
@@ -268,6 +263,7 @@ void setup() {
   Serial.println("Barometric Sensor Setup Complete");
   
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
+  Wire.setClock(100000);
 
   bnoSetup();
   Serial.println("BNO Attached");
@@ -340,10 +336,8 @@ void loop() {
     altitude = integratedAltitude;
     altitudeV = integratedVelocity;
   }
-  else{
-    altitude = newAltitude580;
-    altitudeV = altitudeV580;
-  }
+  altitude = newAltitude580;
+  altitudeV = altitudeV580;
   // integratedVelocity += (zGlobalAccel-9.81)*deltaT/1000000.0;
 
   altitudeAccel = axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+") - GRAVITY;  // positive is upward and no gravity factored
@@ -379,36 +373,42 @@ void loop() {
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
     // }
-    // Serial.print(">");
-    // Serial.print("DeltaT: ");
-    // Serial.print(deltaT);
-    // Serial.print(", ");
+    Serial.print(">");
+    Serial.print("DeltaT: ");
+    Serial.print(deltaT);
+    Serial.print(", ");
 
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
     // // Serial.print(", ");
-
-    // Serial.print("BMP580: ");
-    // Serial.print(altitude,DATAPRECISION);
+    // Serial.print("Ground Pres: ");
+    // Serial.print(getGroundPressure(),DATAPRECISION);
     // Serial.print(", ");
+    // Serial.print("Pressure: ");
+    // Serial.print(getBaroData_BMP580_pressure(),DATAPRECISION);
+    // Serial.print(", ");
+
+    Serial.print("BMP580: ");
+    Serial.print(altitude,DATAPRECISION);
+    Serial.print(", ");
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
     // // Serial.print(", ");
-    // // Serial.print("BMP390Velo: ");
-    // // Serial.print(altitudeV390,DATAPRECISION);
-    // // Serial.print(", ");
-
-
-    // Serial.print("BMP580Velo: ");
-    // Serial.print(altitudeV,DATAPRECISION);
-    // Serial.print(",");
-
-    // Serial.print("baroAccel: ");
-    // Serial.print(altitudeAccel,DATAPRECISION);
+    // Serial.print("BMP390Velo: ");
+    // Serial.print(altitudeV390,DATAPRECISION);
     // Serial.print(", ");
-    // Serial.print("GlobalZaccel: ");
-    // Serial.print(zGlobalAccel,DATAPRECISION);
-    // Serial.print(", ");
+
+
+    Serial.print("BMP580Velo: ");
+    Serial.print(altitudeV,DATAPRECISION);
+    Serial.print(",");
+
+    Serial.print("baroAccel: ");
+    Serial.print(altitudeAccel,DATAPRECISION);
+    Serial.print(", ");
+    Serial.print("GlobalZaccel: ");
+    Serial.print(zGlobalAccel,DATAPRECISION);
+    Serial.print(", ");
     // Serial.print("GlobalZaccelAdxl: ");
     // Serial.print(axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+"),DATAPRECISION);
     // Serial.print(", ");
@@ -426,7 +426,7 @@ void loop() {
         // Serial.print(AccY,DATAPRECISION);
         // Serial.print(", ");
 
-        // Serial.println();
+    Serial.println();
 
 // Serial.println(deltaT);
 #pragma endregion

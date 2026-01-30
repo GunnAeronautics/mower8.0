@@ -20,7 +20,7 @@ extern Quaternion bnoOrientation;
 
 extern double GyroX, GyroY, GyroZ; // deg / sec
 
-extern double accelBnoX, accelBnoY, accelBnoZ;   // in m/s^2
+extern float accelBnoX, accelBnoY, accelBnoZ;   // in m/s^2
 extern double accelBnoLinearX, accelBnoLinearY, accelBnoLinearZ;    // in m/s^2
 extern double zGlobalAccel,yGlobalAccel,xGlobalAccel; // in m/s^2
 
