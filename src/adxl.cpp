@@ -124,7 +124,7 @@ void adxlSetup(void)
 
   /* Set the range to whatever is appropriate for your project */
   accel.setRange(ADXL343_RANGE_16_G);
-  accel.setDataRate(ADXL343_DATARATE_100_HZ);
+  accel.setDataRate(ADXL343_DATARATE_200_HZ);
   // accel.setRange(ADXL343_RANGE_8_G);
   // accel.setRange(ADXL343_RANGE_4_G);
   // accel.setRange(ADXL343_RANGE_2_G);
@@ -141,9 +141,15 @@ void getADXLData()
   /* Get a new sensor event */
   sensors_event_t event;
   accel.getEvent(&event);
+  if (!isnan(event.acceleration.x)){
   xAccel = (event.acceleration.x - X_OFFSET) * X_SCALE;
   yAccel = (event.acceleration.y - Y_OFFSET) * Y_SCALE;
   zAccel = (event.acceleration.z - Z_OFFSET) * Z_SCALE;
+  }
+  /*
+  xAccel = std::fabs(xAccel) < threashold ? 0 : xAccel;
+  yAccel = std::fabs(yAccel) < threashold ? 0 : yAccel;
+  zAccel = std::fabs(zAccel) < threashold ? 0 : zAccel;
 
   /*
   

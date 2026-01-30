@@ -26,12 +26,12 @@
 
 // Time variables
 unsigned long lastT;
-static int deltaT;
-unsigned long startTimeStamp = 0; // ms
+volatile unsigned static int deltaT;
+unsigned long startTimeStamp = 0;   // ms
 unsigned long burnoutTimeStamp = 0; // ms
 
-long timeElapsed = 0;             // time elapsed in flight (ms)
-long timeElapsedSinceBurnout = 0;             // time elapsed in flight (ms)
+unsigned long timeElapsed = 0; // time elapsed in flight (ms)
+unsigned long timeElapsedSinceBurnout = 0;
 
 int lastMovementT = 0;            // ms
 float altitude = 0;
@@ -106,18 +106,25 @@ void timeStuff()
   else
   { // after burnout
     timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
+  else
+  { // after burnout
+    timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
   }
 }
 
 
-float predictApogee(float alt, float v, float dragCoef) {
-  return alt + log((dragCoef * v * v / 9.81) + 1) /
-                   (2.0 * dragCoef);  // copied from mower6.0
+float predictApogee(float alt, float v, float dragCoef)
+{
+  return alt + log((dragCoef * v * v / 9.81) + 1) / (2.0 * dragCoef);
 }
-float predictApogeeIdeal(float alt, float v) {
+
+float predictApogeeIdeal(float alt, float v)
+{
   return alt + pow(v, 2) / 2. / GRAVITY;
 }
-float coefOfDrag(float accel, float v) {
+
+float coefOfDrag(float accel, float v)
+{
   float coef = abs(accel / v / v);
   return coef;
 }
@@ -161,7 +168,9 @@ void openOpenFlap(){
   // openOpenSD();
   openFlaps();
 }
-void closeCloseFlap(){
+
+void closeCloseFlap()
+{
   dragFlapDeployed = false;
   // closeSD();
   // openOpenSD();
@@ -209,7 +218,6 @@ void writeDataHeader(){
 
 void dataLogging()
 {
-  BaroData baro = getBaroData();
   String dataString =
       String(timeElapsed) + ',' +  // rocket flight time
       String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
@@ -419,16 +427,15 @@ void loop() {
     // Serial.print(altitudeAccel,DATAPRECISION);
     // Serial.print(", ");
 
-    // Serial.print("bno055Yaccel: ");
-    // Serial.print(AccY,DATAPRECISION);
-    // Serial.print(", ");
+        // Serial.print("bno055Yaccel: ");
+        // Serial.print(AccY,DATAPRECISION);
+        // Serial.print(", ");
 
-    Serial.println();
-
+        Serial.println();
 
 // Serial.println(deltaT);
 #pragma endregion
-      break;
+        break;
 
   case 1: // pad
     #pragma region

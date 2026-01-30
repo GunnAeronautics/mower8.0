@@ -1,17 +1,24 @@
 #include "headers/sensors/imu.h"
-
-Adafruit_BNO055 bno = Adafruit_BNO055(55, BNO_ADDRESS, &Wire);
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#define IMU_DEBUG
+#ifdef BNO055
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29, &Wire);
+uint8_t systemCali,gyroCali,accelCali,magCali;
+#endif
+#ifdef BNO085
+BNO08x bno;
+#define BNO08X_ADDR 0x4A
+#endif
 Quaternion orientation;
 Quaternion angularSpeed;
 Quaternion bnoOrientation;
-float GyroX, GyroY, GyroZ; // deg / sec
-float AccX, AccY, AccZ;    // Gs
-float MagX, MagY, MagZ;    // Gs
-uint8_t systemCali,gyroCali,accelCali,magCali;
-// accelerations in m/s^2 (definitions for externs in imu.h)
-extern double zGlobalAccel = 0.0; // in m/s^2
-extern double xGlobalAccel = 0.0; // in m/s^2
-extern double yGlobalAccel = 0.0; // in m/s^2
+double MagX, MagY, MagZ;    // Gs
+
+double GyroX, GyroY, GyroZ; // deg / sec
+double accelBnoX, accelBnoY, accelBnoZ;   // in m/s^2
+double accelBnoLinearX, accelBnoLinearY, accelBnoLinearZ;    // in m/s^2
+double zGlobalAccel,yGlobalAccel,xGlobalAccel; // in m/s^2
 
 // Compile-time or runtime fake IMU support:
 // Define FAKE_IMU in build flags to default to fake mode, or set `fakeimu` at runtime.
@@ -22,19 +29,19 @@ extern double yGlobalAccel = 0.0; // in m/s^2
 // #endif
 bool fakeimu = false;
 
-float heading;        // in radians
-float zenith;        // in radians
+double heading;        // in radians
+double zenith;        // in radians
 
 
-float yaw;
-float pitch;
-float roll;
+double yaw;
+double pitch;
+double roll;
 
 
-float bnoW;
-float bnoI;
-float bnoJ;
-float bnoK;
+double bnoW;
+double bnoI;
+double bnoJ;
+double bnoK;
 
 void writeRegister(uint8_t reg, uint8_t value) {
     Wire.beginTransmission(0x28); // BNO055 I2C address
@@ -42,25 +49,28 @@ void writeRegister(uint8_t reg, uint8_t value) {
     Wire.write(value);
     Wire.endTransmission();
   }
+#ifdef BNO085
+  void bnoSetup(){
+  if (bno.begin(BNO08X_ADDR, Wire) == false) {
+    Serial.println("BNO08x not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
+    while (1)
+      ;
+  }
+  Serial.println("BNO08x found!");
 
-void IMU_BNO055setup()
+  if (bno.enableReport(SH2_ROTATION_VECTOR, 5000)){
+    Serial.println("BNO085 reporting mode configured!");
+  } 
+  else{
+    Serial.println("BNO085 reporting mode NOT configured!");
+
+  }
+}
+#endif
+#ifdef BNO055
+void bnoSetup()
   {
     // If running in fake IMU mode, skip hardware init and set sane defaults.
-    if (fakeimu) {
-      orientation.setQuat(1, 0, 0, 0);
-      bnoOrientation.setQuat(1, 0, 0, 0);
-      zenith = 0;
-      zGlobalAccel = 9.81;
-      xGlobalAccel = 0;
-      yGlobalAccel = 0;
-      AccX = AccY = 0;
-      AccZ = 9.81;
-      MagX = MagY = MagZ = 0;
-      systemCali = gyroCali = accelCali = magCali = 0;
-      Serial.println("IMU: fake mode enabled");
-      return;
-    }
-
     if (!bno.begin())
     {
       /* There was a problem detecting the BNO055 ... check your connections */
@@ -69,7 +79,9 @@ void IMU_BNO055setup()
         ;
     }
     bno.setExtCrystalUse(true);
-    bno.setMode(OPERATION_MODE_CONFIG);
+    // bno.setMode(OPERATION_MODE_CONFIG);
+    bno.setMode(OPERATION_MODE_NDOF);
+
     delay(25); // Allow sensor to stabilize
     // writeRegister(ACC_CONFIG_REGISTER, 0x0C); // Set range to ±16g
     // Serial.println("Accelerometer set to ±16g range.");
@@ -86,18 +98,19 @@ void IMU_BNO055setup()
     Serial.println("Orientation Initialized");
   
   }
+#endif
   
 
-  float degreesToRadians(float angle)
+  double degreesToRadians(double angle)
   {
     return angle / 180 * PI;
   }
-  float radiansToDegrees(float angle)
+  double radiansToDegrees(double angle)
   {
     return angle * 180 / PI;
   }
   
-  float angleBetweenAxis(Quaternion newOrientation, String dir)
+  double angleBetweenAxis(Quaternion newOrientation, String dir)
   {
     Quaternion axis;//bruh
     if      (dir == "X+"){axis.setQuat(0, 1, 0, 0);}//shit code
@@ -116,7 +129,7 @@ void IMU_BNO055setup()
   }
   
   
-  float axisComponent(Quaternion newOrientation, float x, float y, float z, String dir ){
+  double axisComponent(Quaternion newOrientation, double x, double y, double z, String dir ){
     newOrientation.normalize();
 
     Quaternion quatVector(0, x, y, z);
@@ -132,7 +145,7 @@ void IMU_BNO055setup()
     else if (dir == "Z-"){return -newOrientation.k;}
     return 0;
   }
-  float verticalAcceleration(Quaternion newOrientation, float accelX, float accelY, float accelZ)
+  double verticalAcceleration(Quaternion newOrientation, double accelX, double accelY, double accelZ)
   {
     newOrientation.normalize();
     Quaternion accel(0, accelX, accelY, accelZ);
@@ -147,6 +160,8 @@ void IMU_BNO055setup()
   Quaternion getQuat(){
     return bnoOrientation;;
   }
+
+  #ifdef BNO055
   void IMUdata(int deltaT)
   {
     // Possible vector values can be:
@@ -157,40 +172,23 @@ void IMU_BNO055setup()
     // - VECTOR_LINEARACCEL   - m/s^2
     // - VECTOR_GRAVITY       - m/s^2
     // If fakeimu is enabled, generate synthetic (but plausible) IMU values.
-    if (fakeimu) {
-      unsigned long t = millis();
-      float tt = t / 1000.0f;
-      // simple oscillation for lateral acceleration, steady gravity on Z
-      AccX = 0.0f;
-      AccY = sin(tt * 2.0f * PI) * 0.5f; // +-0.5 g-ish
-      AccZ = 9.81f;
-      // zAccel, xAccel, yAccel expressed in m/s^2
-      zGlobalAccel = AccZ;
-      xGlobalAccel = AccX;
-      yGlobalAccel = AccY;
-      // heading/zenith slowly rotate
-      heading = fmod(tt * 10.0f, 360.0f);
-      zenith = 45.0f; // constant example value (degrees in original code)
-      MagX = MagY = MagZ = 0.0f;
-      bnoW = 1.0f; bnoI = bnoJ = bnoK = 0.0f;
-      systemCali = gyroCali = accelCali = magCali = 0;
-      return;
-    }
 
     imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+    // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    imu::Vector<3> linAccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+
     imu::Vector<3> mag = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
   
     // imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     imu::Quaternion quat = bno.getQuat();
-    /* Display the floating point data */
+    /* Display the doubleing point data */
     // yaw += gyro.x()*deltaT/1000000;
     // pitch += gyro.y()*deltaT/1000000;//perpindicular to the ground
     // roll += gyro.z()*deltaT/1000000;
     // orientation.gyro(degreesToRadians(yaw),degreesToRadians(pitch),degreesToRadians(roll));
     // Quaternion orientation(quat.w(),quat.x(),quat.y(),quat.z());
 
-  
     angularSpeed.gyro(degreesToRadians(gyro.x() * deltaT / 1000000),
                       degreesToRadians(gyro.y() * deltaT / 1000000),
                       degreesToRadians(gyro.z() * deltaT / 1000000));
@@ -200,6 +198,7 @@ void IMU_BNO055setup()
     bnoI = quat.x();
     bnoJ = quat.y();
     bnoK = quat.z();
+    GyroY = gyro.y();
 
     bnoOrientation.setQuat(quat.w(),quat.x(),quat.y(),quat.z());
 
@@ -214,43 +213,99 @@ void IMU_BNO055setup()
     MagY = mag.y();
     MagZ = mag.z();
 
-    AccX = accel.x();
-    AccY = -accel.y();//put negative side if servos are on top
-    AccZ = accel.z();
-    GyroY = gyro.y();
+    accelBnoX = accel.x();
+    accelBnoY = accel.y();//put negative side if servos are on top
+    accelBnoZ = accel.z();
+    accelBnoLinearX = linAccel.x();
+    accelBnoLinearY = linAccel.y();
+    accelBnoLinearZ = linAccel.z();
     bno.getCalibration(&systemCali,&gyroCali,&accelCali,&magCali);
-    // Serial.print(zenith);
-    // Serial.print(", ");
-    // Serial.print(verticalAccel);
-    // Serial.print(", ");
-    // Serial.print(trueAngle);
-    // Serial.print(", ");
-  
-    // Serial.print(orientation.w);Serial.print(", ");
-    // Serial.print(orientation.i);Serial.print(", ");
-    // Serial.print(orientation.j);Serial.print(", ");
-    // Serial.print(orientation.k);Serial.print(", ");
-  
-    // Serial.print(accel.x());Serial.print(", ");
-    // Serial.print(accel.y());Serial.print(", ");
-    // Serial.print(accel.z());//Serial.print();
-  
-    // Serial.println();
-    //  bno.getEvent(&BNO);
-    //  Serial.print(", ");
-    //  Serial.print(BNO.gyro.x);
-    //  Serial.print(", ");
-    //  Serial.print(BNO.gyro.y);
-    //  Serial.print(", ");
-    //  Serial.print(BNO.gyro.z);
-    //  Serial.println();
-    //  Serial.print(BNO.gyro.z);
-    //Serial.println();
-  
-    // Quaternion data
-    // imu::Quaternion quat = bno.getQuat();
-    // Serial.print(quat.w()+3);Serial.print(",");
-    // Serial.print(quat.x()+3);Serial.print(",");
-    // Serial.print(quat.y()+3);Serial.print(",");
-    // Serial.print(quat.z()+3);Serial.print(",");
+        #ifdef IMU_DEBUG
+        Serial.print(">");
+        Serial.print("DeltaT: ");
+        Serial.print(deltaT);
+        Serial.print(", ");
+        Serial.print("Accel: ");
+        Serial.print(accelBnoY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("LinAccel: ");
+        Serial.print(accelBnoLinearY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("GlobalAccel: ");
+        Serial.print(zGlobalAccel, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("zenith: ");
+        Serial.print(zenith, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("Roll rate: ");
+        Serial.print(GyroY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.println();
+        #endif
   }
+  #endif
+  #ifdef BNO085
+
+  void IMUdata(int deltaT){
+
+
+
+    // Has a new event come in on the Sensor Hub Bus?
+    if (bno.getSensorEvent() == true) {
+
+      // is it the correct sensor data we want?
+      if (bno.getSensorEventID() == SENSOR_REPORTID_ROTATION_VECTOR) {
+        bnoW = bno.getQuatI();
+        bnoI = bno.getQuatI();
+        bnoJ = bno.getQuatJ();
+        bnoK = bno.getQuatK();
+        bnoOrientation.setQuat(bnoW,bnoI,bnoJ,bnoK);
+        accelBnoY = bno.getAccelY();
+        accelBnoLinearY = bno.getLinAccelY();
+
+        GyroY = bno.getGyroY();
+        bno.getAccelAccuracy();
+
+        double quatRadianAccuracy = bno.getQuatRadianAccuracy();
+        zGlobalAccel = axisComponent(bnoOrientation, bno.getAccelX(), bno.getAccelY(), bno.getAccelZ(), "Z+");
+        // writeZGlobalAccel(newZGlobalAccel);
+
+        zenith = angleBetweenAxis(bnoOrientation,"Y+");
+        
+        #ifdef IMU_DEBUG
+        Serial.print(">");
+        Serial.print("DeltaT: ");
+        Serial.print(deltaT);
+        Serial.print(", ");
+        Serial.print("Accel: ");
+        Serial.print(accelBnoY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("LinAccel: ");
+        Serial.print(accelBnoLinearY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("GlobalAccel: ");
+        Serial.print(zGlobalAccel, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("zenith: ");
+        Serial.print(zenith, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("Roll rate: ");
+        Serial.print(GyroY, DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("Accel accuracy: ");
+        Serial.print(bno.getAccelAccuracy(), DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("Lin Accel accuracy: ");
+        Serial.print(bno.getLinAccelAccuracy(), DATAPRECISION);
+        Serial.print(", ");
+        Serial.print("gyro accuracy: ");
+        Serial.print(bno.getGyroAccuracy(), DATAPRECISION);
+        Serial.print(", ");
+        Serial.println();
+        #endif
+      }
+    }
+
+  }
+
+  #endif

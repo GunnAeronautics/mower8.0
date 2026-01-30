@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+
 #define FAKE_IMU true
 // #define DEBUG
 
@@ -14,12 +15,11 @@
 #define SERVO_M 4 // 3
 #define SERVO_N 18 // 4 120.60 41.4 37.9
 
-// BMP390/BMP580 Barometric Sensor Pins
+// BMP581 Barometric Sensor Pins
 #define BMP_SCK 13 //clk // scl
 #define BMP_MISO 27 //sdo // 
 #define BMP_MOSI 14 //sda //
-#define BMP390_CS 33
-#define BMP580_CS 32
+#define BMP_CS 32
 
 // ADXL343 Accelerometer Pins, -- uses i2c now
 /*#define ADXL343_SCK 13
@@ -31,9 +31,7 @@
 #define ADXL343_SDA 5
 
  //BNO055 IMU I2C Configuration
-#define BNO_ADDRESS 0x29
-#define SDA_PIN 21
-#define SCL_PIN 22
+
 
 
 // SD Card SPI Pins
@@ -49,10 +47,11 @@
 #define CONFIG_MODE 0x00
 #define ACCONLY_MODE 0x01
 #define ACC_CONFIG_REGISTER 0x08
-
+#define BNO_ADDRESS 0x28
 // ============================================================================
 // PHYSICAL CONSTANTS
 // ============================================================================
+// up is positive y axis
 
 #define GRAVITY 9.81  // m/s^2
 
