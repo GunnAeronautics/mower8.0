@@ -1,7 +1,6 @@
-#ifndef IMU_H
 #define IMU_H
-#define BNO055
-// #define BNO085
+// #define BNO055
+#define BNO085
 #include <Arduino.h>
 #include "../math/Quaternion.h"
 
@@ -14,7 +13,7 @@
 
 #include <Wire.h>
 #include "../config/config.h"
-
+#ifdef IMU_H
 extern Quaternion orientation;
 extern Quaternion bnoOrientation;
 

@@ -28,6 +28,7 @@ double newAltitude390 = 0;
 double altitudeV390;
 double altitudeV580;
 double altitudeA580;
+float lastAltitude580 = 0;
 double lastAltitudeV580;
 double groundPressure390;
 double groundPressure580;
@@ -80,8 +81,8 @@ void baroDataRead()
 
   // ---- BMP580 ----
   if (bmp581.performReading()) {
-    temperature = bmp581.temperature;
-    pressure = bmp581.pressure; // pressure read in hPa
+    temp_580 = bmp581.temperature;
+    pressure_580 = bmp581.pressure; // pressure read in hPa
   
 
   } else {
@@ -90,47 +91,46 @@ void baroDataRead()
 
   // ---- Combine results ----
 
-  temperatureRoll.newData(temperature);
-  pressureRoll.newData(pressure);
+  temperatureRoll.newData(temp_580);
+  pressureRoll.newData(pressure_580);
   
 }
 
 
+//altitude580 is altitude
+//altitudeV580 is velocity
+//altitudeA580 is acceleration
 void altitudeProcessing(int deltaT)
 {
-  lastAltitude = baroData_unified.altitude;
-  baroData_unified.altitude = pressToAlt(pressureRoll.getData());
-  altitudeVRoll.newData((baroData_unified.altitude - lastAltitude) / deltaT * 1000000);
-  baroData_unified.altitudeV = altitudeVRoll.getData();
 
   
-  altitude390 = pressToAlt390(pressure_390);
-  altitude580 = pressToAlt580(pressure_580);
+  // altitude390 = pressToAlt390(pressure_390);
+  altitude580 = pressToAlt(pressure_580);
   
-  newAltitude390 = newPressToAlt390(pressure_390);
+  // newAltitude390 = newPressToAlt390(pressure_390);
   newAltitude580 = newPressToAlt580(pressure_580);
 
 
-  altitudeVRoll390.newData((altitude390 - lastAltitude390) / deltaT * 1000000);
-  altitudeVRoll580.newData((altitude580 - lastAltitude580) / deltaT * 1000000);
+  // altitudeVRoll390.newData((altitude390 - lastAltitude390) / deltaT * 1000000);
+  altitudeVRoll.newData((newAltitude580 - lastAltitude580) / deltaT * 1000000);
 
-  altitudeV390 = altitudeVRoll390.getData();
-  altitudeV580 = altitudeVRoll580.getData();
+  // altitudeV390 = altitudeVRoll390.getData();
+  newAltitude580 = altitudeVRoll.getData();
   
-  altitudeA = ((altitudeV-lastAltitudeV) / deltaT * 1000000);
+  altitudeA580 = ((newAltitude580-lastAltitudeV580) / deltaT * 1000000);
 
-  lastAltitudeV = altitudeV;
-  lastAltitude = altitude;
+  lastAltitudeV580 = lastAltitudeV580;
+  lastAltitude580 = newAltitude580;
 
 }
 
 
-double pressToAlt(double pres)
+float pressToAlt(float pres)
 {
   // Returns altitude (m) from pressure in hecta pascals and temperature in celsius
   // https://www.mide.com/air-pressure-at-altitude-calculator
   // https://en.wikipedia.org/wiki/Barometric_formula
-  return (double)(((273.0 + groundTemperature) / (-.0065)) *
+  return (float)(((273.0 + groundTemperature) / (-.0065)) *
                  ((pow((pres / groundPressure),
                        ((8.314 * .0065) / (GRAVITY * .02896)))) -
                   1.0));
@@ -141,58 +141,22 @@ float newPressToAlt390(float pres)
 }
 float newPressToAlt580(float pres)
 {
-  return (float)(44330.0 * (1.0 - pow(pres / groundPressure580, 0.1903)));
-}
-
-BaroData getBaroData()
-{
-  return baroData_unified;
-}
-
-float getPressure()
-{
-  return baroData_unified.pressure;
-}
-
-float getTemperature()
-{
-  return baroData_unified.temperature;
-}
-
-float getAltitude()
-{
-  return baroData_unified.altitude;
-}
-
-float getAltitudeVelocity()
-{
-  return baroData_unified.altitudeV;
+  return (float)(44330.0 * (1.0 - pow(pres / groundPressure, 0.1903)));
 }
 
 float getGroundPressure()
 {
-  return baroData_unified.groundPressure;
+  return groundPressure;
 }
 
-float getGroundTemperature()
+float getGroundTemp()
 {
-  return baroData_unified.groundTemperature;
-}
-
-BMPSensor getActiveSensor()
-{
-  return activeSensor;
+  return groundTemperature;
 }
 
 float getBaroData_BMP390_temp()
 {
-  if (activeSensor == BMP_390)
-  {
-
-    return temp_390;
-  }
-  // Return zero if BMP390 is not active
-  return 0;
+  return temp_390;
 }
 
 float getBaroData_BMP390_pressure()
@@ -210,12 +174,3 @@ float getBaroData_BMP580_temp()
   return temp_580;
 }
 
-bool isBMP390Active()
-{
-  return activeSensor == BMP_390;
-}
-
-bool isBMP580Active()
-{
-  return activeSensor == BMP_580;
-}

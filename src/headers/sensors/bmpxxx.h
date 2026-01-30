@@ -1,6 +1,5 @@
-#ifndef BMPXXX_H
 #define BMPXXX_H
-
+#ifdef BMPXXX_H
 #include "../config/config.h"
 #include "../utils/RollingAverage.h"
 
@@ -9,8 +8,6 @@
 
 
 // Global data structures
-extern BaroData baroData_unified;
-extern BMPSensor activeSensor;
 extern float lastAltitude;
 extern float lastAltitudeBuiltIn;
 extern double altitude390;
@@ -42,6 +39,10 @@ void baroSetup();
  */
 void baroDataRead();
 void altitudeProcessing(int deltaT);
+float getBaroData_BMP580_pressure();
+float getBaroData_BMP580_temp();
+float getGroundTemp();
+float getGroundPressure();
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -53,8 +54,8 @@ void altitudeProcessing(int deltaT);
  * @return Altitude in meters
  */
 float pressToAlt(float pres);
-float pressToAlt390(float pres);
-float pressToAlt580(float pres);
+// float pressToAlt390(float pres);
+// float pressToAlt580(float pres);
 float newPressToAlt390(float pres);
 float newPressToAlt580(float pres);
 

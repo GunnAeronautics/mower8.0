@@ -273,35 +273,45 @@ void bnoSetup()
         zenith = angleBetweenAxis(bnoOrientation,"Y+");
         
         #ifdef IMU_DEBUG
-        Serial.print(">");
-        Serial.print("DeltaT: ");
-        Serial.print(deltaT);
+        Serial.print("Quaternion: ");
+        Serial.print(bnoW);
         Serial.print(", ");
-        Serial.print("Accel: ");
-        Serial.print(accelBnoY, DATAPRECISION);
+        Serial.print(bnoI);
         Serial.print(", ");
-        Serial.print("LinAccel: ");
-        Serial.print(accelBnoLinearY, DATAPRECISION);
+        Serial.print(bnoJ);
         Serial.print(", ");
-        Serial.print("GlobalAccel: ");
-        Serial.print(zGlobalAccel, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("zenith: ");
-        Serial.print(zenith, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("Roll rate: ");
-        Serial.print(GyroY, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("Accel accuracy: ");
-        Serial.print(bno.getAccelAccuracy(), DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("Lin Accel accuracy: ");
-        Serial.print(bno.getLinAccelAccuracy(), DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("gyro accuracy: ");
-        Serial.print(bno.getGyroAccuracy(), DATAPRECISION);
-        Serial.print(", ");
+        Serial.print(bnoK);
         Serial.println();
+
+        // Serial.print(">");
+        // Serial.print("DeltaT: ");
+        // Serial.print(deltaT);
+        // Serial.print(", ");
+        // Serial.print("Accel: ");
+        // Serial.print(accelBnoY, DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("LinAccel: ");
+        // Serial.print(accelBnoLinearY, DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("GlobalAccel: ");
+        // Serial.print(zGlobalAccel, DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("zenith: ");
+        // Serial.print(zenith, DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("Roll rate: ");
+        // Serial.print(GyroY, DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("Accel accuracy: ");
+        // Serial.print(bno.getAccelAccuracy(), DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("Lin Accel accuracy: ");
+        // Serial.print(bno.getLinAccelAccuracy(), DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.print("gyro accuracy: ");
+        // Serial.print(bno.getGyroAccuracy(), DATAPRECISION);
+        // Serial.print(", ");
+        // Serial.println();
         #endif
       }
     }

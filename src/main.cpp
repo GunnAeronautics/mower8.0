@@ -106,9 +106,6 @@ void timeStuff()
   else
   { // after burnout
     timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
-  else
-  { // after burnout
-    timeElapsedSinceBurnout = currentMillis - burnoutTimeStamp;
   }
 }
 
@@ -260,8 +257,8 @@ void dataLogging()
   logData(dataString);
 }
 
-double altitudeZero[10] = {0,0,0,0,0,0,0,0,0,0};
-double velocityZero[10] = {0,0,0,0,0,0,0,0,0,0};
+double altitudeZero[30] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+double velocityZero[30] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 int zeroIndex = 0;
 void setup() {
   Serial.begin(115200);
@@ -272,15 +269,13 @@ void setup() {
   
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
 
-  IMU_BNO055setup();
-  // Serial.println("BNO055 Attached");
+  bnoSetup();
+  Serial.println("BNO Attached");
   adxlSetup();
   Serial.println("ADXL343 Attached");
 
   Serial.println("Ground Pressure " + (String)getGroundPressure());
-  Serial.println("Ground Temperature " + (String)getGroundTemperature());
-  lastAltitude = pressToAlt(getGroundPressure());
-  lastAltitudeBuiltIn = getAltitude();
+  Serial.println("Ground Temperature " + (String)getGroundTemp());
 
   sdSetup();
   writeDataHeader();
@@ -346,7 +341,7 @@ void loop() {
     altitudeV = integratedVelocity;
   }
   else{
-    altitude = altitude580;
+    altitude = newAltitude580;
     altitudeV = altitudeV580;
   }
   // integratedVelocity += (zGlobalAccel-9.81)*deltaT/1000000.0;
@@ -371,46 +366,46 @@ void loop() {
   switch (flightState)
   {
   case 0: // happy data printing mode
-    dataLogging();
+    // dataLogging();
 
     #pragma region 
     // dataLogging();
     //
     // dataLogging();
-    closeSD();
-    openOpenSD();
+    // closeSD();
+    // openOpenSD();
 
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
     // }
-    Serial.print(">");
-    Serial.print("DeltaT: ");
-    Serial.print(deltaT);
-    Serial.print(", ");
-
-    // Serial.print("BMP390: ");
-    // Serial.print(altitude390,DATAPRECISION);
+    // Serial.print(">");
+    // Serial.print("DeltaT: ");
+    // Serial.print(deltaT);
     // Serial.print(", ");
 
-    Serial.print("BMP580: ");
-    Serial.print(altitude,DATAPRECISION);
-    Serial.print(", ");
-    Serial.print("BMP390: ");
-    Serial.print(altitude390,DATAPRECISION);
-    Serial.print(", ");
-    // Serial.print("BMP390Velo: ");
-    // Serial.print(altitudeV390,DATAPRECISION);
+    // // Serial.print("BMP390: ");
+    // // Serial.print(altitude390,DATAPRECISION);
+    // // Serial.print(", ");
+
+    // Serial.print("BMP580: ");
+    // Serial.print(altitude,DATAPRECISION);
     // Serial.print(", ");
+    // // Serial.print("BMP390: ");
+    // // Serial.print(altitude390,DATAPRECISION);
+    // // Serial.print(", ");
+    // // Serial.print("BMP390Velo: ");
+    // // Serial.print(altitudeV390,DATAPRECISION);
+    // // Serial.print(", ");
 
 
-    Serial.print("BMP580Velo: ");
-    Serial.print(altitudeV,DATAPRECISION);
-    Serial.print(",");
+    // Serial.print("BMP580Velo: ");
+    // Serial.print(altitudeV,DATAPRECISION);
+    // Serial.print(",");
 
-    Serial.print("baroAccel: ");
-    Serial.print(altitudeAccel,DATAPRECISION);
-    Serial.print(", ");
+    // Serial.print("baroAccel: ");
+    // Serial.print(altitudeAccel,DATAPRECISION);
+    // Serial.print(", ");
     // Serial.print("GlobalZaccel: ");
     // Serial.print(zGlobalAccel,DATAPRECISION);
     // Serial.print(", ");
@@ -431,7 +426,7 @@ void loop() {
         // Serial.print(AccY,DATAPRECISION);
         // Serial.print(", ");
 
-        Serial.println();
+        // Serial.println();
 
 // Serial.println(deltaT);
 #pragma endregion
