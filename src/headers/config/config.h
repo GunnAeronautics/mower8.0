@@ -66,10 +66,12 @@
 //WARNING DOES NOT ACCOUNT FOR THE BOTTOM SECTION BEING LOWER
 //WARNING DOES NOT ACCOUNT FOR THE 
 // Parachute and drag flap configuration
-#define PARACHUTE_TERM_VELOCITY 6.5 // m/s
+// #define PARACHUTE_TERM_VELOCITY 6.5 // m/s
+#define PARACHUTE_TERM_VELOCITY 7.15// m/s real
+
 //WARNING THIS IS FROM OPENROCKET 1/17/26
 
-#define COEF_DRAG_FLAPDEPLOYED 0.002213 // accelY / v / v of the rocket when flaps fully deployed
+#define COEF_DRAG_FLAPDEPLOYED 0.017417 // accelY / v / v of the rocket when flaps fully deployed
 
 // Servo deployment angles
 #define DRAG_FLAPS_DEPLOYED_ANGLE 180

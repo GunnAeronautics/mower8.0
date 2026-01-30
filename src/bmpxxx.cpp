@@ -33,6 +33,9 @@ float temp_390 = 0, pressure_390 = 0;
 float temp_580 = 0, pressure_580 = 0;
 double altitude390 = 0;
 double altitude580 = 0;
+double newAltitude580 = 0;
+double newAltitude390 = 0;
+
 double altitudeV390;
 double altitudeV580;
 double altitudeA580;
@@ -181,6 +184,10 @@ void altitudeProcessing(int deltaT)
   altitude390 = pressToAlt390(pressure_390);
   altitude580 = pressToAlt580(pressure_580);
   
+  newAltitude390 = newPressToAlt390(pressure_390);
+  newAltitude580 = newPressToAlt580(pressure_580);
+
+
   altitudeVRoll390.newData((altitude390 - lastAltitude390) / deltaT * 1000000);
   altitudeVRoll580.newData((altitude580 - lastAltitude580) / deltaT * 1000000);
 
@@ -224,6 +231,14 @@ float pressToAlt580(float pres)
                  ((pow((pres / groundPressure580),
                        ((8.314 * .0065) / (GRAVITY * .02896)))) -
                   1.0));
+}
+float newPressToAlt390(float pres)
+{
+  return (float)(44330.0 * (1.0 - pow(pres / groundPressure390, 0.1903)));
+}
+float newPressToAlt580(float pres)
+{
+  return (float)(44330.0 * (1.0 - pow(pres / groundPressure580, 0.1903)));
 }
 
 BaroData getBaroData()
@@ -289,12 +304,7 @@ float getBaroData_BMP580_pressure()
 
 float getBaroData_BMP580_temp()
 {
-  if (activeSensor == BMP_580)
-  {
-    return temp_580;
-  }
-  // Return zero if BMP580 is not active
-  return 0;
+  return temp_580;
 }
 
 bool isBMP390Active()

@@ -33,6 +33,10 @@ extern double altitudeV390;
 extern double altitudeV580;
 extern double lastAltitudeV580;
 extern double altitudeA580;
+
+extern double newAltitude580;
+extern double newAltitude390;
+
 // ============================================================================
 // INITIALIZATION AND SETUP
 // ============================================================================
@@ -123,5 +127,7 @@ bool isBMP580Active();
 float pressToAlt(float pres);
 float pressToAlt390(float pres);
 float pressToAlt580(float pres);
+float newPressToAlt390(float pres);
+float newPressToAlt580(float pres);
 
 #endif // BMPXXX_H

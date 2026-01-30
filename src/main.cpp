@@ -4,6 +4,7 @@
 //
 #include <Arduino.h>
 #include <math.h>
+#include <SimpleKalmanFilter.h>
 
 // Configuration and constants
 #include "headers/config/config.h"
@@ -41,7 +42,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
+int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
@@ -156,24 +157,28 @@ void dragCoefProcessing(){
 
 void openOpenFlap(){
   dragFlapDeployed = true;
-  closeSD();
-  openOpenSD();
+  // closeSD();
+  // openOpenSD();
   openFlaps();
 }
 void closeCloseFlap(){
   dragFlapDeployed = false;
-  closeSD();
-  openOpenSD();
+  // closeSD();
+  // openOpenSD();
   closeFlaps();
 }
 
 void writeDataHeader(){
   String datalogHeader = 
   "timeElapsed,"
+  "Pressure,"
+  "Temp,"
   "Alt,"
   "integratedAlt,"
   "baroAlt580,"
   "baroAlt390,"
+  "mewbaroAlt580,"
+  "newbaroAlt390,"
 
   "velocity,"
   "integratedVelo,"
@@ -207,11 +212,16 @@ void dataLogging()
   BaroData baro = getBaroData();
   String dataString =
       String(timeElapsed) + ',' +  // rocket flight time
-      // String(pressure, DATAPRECISION) + ',' + // pressure
+      String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
+      String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' + // temp
+
       String(altitude, DATAPRECISION) + ',' +    // alt
+
       String(integratedAltitude) + ',' +    // alt
       String(altitude580) + ',' +    // alt
       String(altitude390) + ',' +    // alt
+      String(newAltitude580, DATAPRECISION) + ',' +    // alt
+      String(newAltitude390, DATAPRECISION) + ',' +    // alt
 
       String(altitudeV, DATAPRECISION) + ',' +   // velocity - baro derived
       String(integratedVelocity, DATAPRECISION) + ',' +    // alt
@@ -241,9 +251,10 @@ void dataLogging()
       "\n";
   logData(dataString);
 }
-double accelErrorToZeroVelo = 0;
-double accelErrorToZeroVeloADXL = 0;
 
+double altitudeZero[10] = {0,0,0,0,0,0,0,0,0,0};
+double velocityZero[10] = {0,0,0,0,0,0,0,0,0,0};
+int zeroIndex = 0;
 void setup() {
   Serial.begin(115200);
   Serial.println("Serial Begin");
@@ -284,10 +295,6 @@ void setup() {
 
     delay(100);
   }
-  accelErrorToZeroVelo = zGlobalAccel;
-  accelErrorToZeroVeloADXL = axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+");
-  Serial.print("accel Zero :");
-  Serial.println(accelErrorToZeroVelo);
   delay(1000);
   pinMode(2, OUTPUT);  // blue LED
   digitalWrite(2, HIGH);
@@ -357,17 +364,13 @@ void loop() {
   {
   case 0: // happy data printing mode
     dataLogging();
-    if (timeElapsed > 600000){
-      closeSD();
-      integratedVelocity = altitudeV;
-      integratedAltitude = altitude;
-    }
+
     #pragma region 
     // dataLogging();
     //
     // dataLogging();
-    // closeSD();
-    // openOpenSD();
+    closeSD();
+    openOpenSD();
 
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
@@ -439,6 +442,15 @@ void loop() {
     //detects launch if accel is above 50 m/s^2
     //safety altitude is above 2 meters
 
+    altitudeZero[zeroIndex] = 0;
+    velocityZero[zeroIndex] = 0;
+
+    zeroIndex ++;//increment to next in rolling array
+    zeroIndex %= 30;
+    for (int i = 0; i < 30; i++){
+      velocityZero[i] += altitudeAccel*deltaT/1000000.0;
+      altitudeZero[i] += velocityZero[i]*deltaT/1000000.0;
+    }
 
     if (altitudeAccel > 30.0f || altitude > 3.0f)//make sure the altitude accel axis is correct
     {
@@ -446,8 +458,9 @@ void loop() {
       if (flightStateAdvancementTrigger > 3)
       {
         startTimeStamp = millis();
-        integratedVelocity = altitudeV;
-        integratedAltitude = altitude;
+        
+        integratedVelocity = velocityZero[zeroIndex];
+        integratedAltitude = altitudeZero[zeroIndex];
 
         flightState++;
       }
@@ -472,8 +485,7 @@ void loop() {
       if (flightStateAdvancementTrigger > 3)
       {
         burnoutTimeStamp = millis();
-        closeSD();
-        openOpenSD();
+
         flightState++;
         flightStateAdvancementTrigger = 0;
       }
@@ -505,38 +517,38 @@ void loop() {
     }
     else{flightStateAdvancementTrigger = 0;}
 
-    // //SAFETY CODE
-    // //_____________________________________________________________________________________________________________
-    // //if we are above the desired altitude deploy the flaps (very simple logic)
-    // if (altitude > DESIRED_APOGEE)
-    //   {openOpenFlap();break;}
-    // //if we ever need to do this we probably messed up real bad
-    // //this is just here to save a few points
+    //SAFETY CODE
+    //_____________________________________________________________________________________________________________
+    //if we are above the desired altitude deploy the flaps (very simple logic)
+    if (altitude > DESIRED_APOGEE)
+      {openOpenFlap();break;}
+    //if we ever need to do this we probably messed up real bad
+    //this is just here to save a few points
 
-    // //if perfect kinematic predictions say we are below the desired altitude
-    // //we retract the flaps (somewhat simple logic)
-    // if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
-    //   {closeCloseFlap();break;}
-    // //if we ever need to rely on this we're probably cooked
-    // //this is just here to save a few points
-    // //_____________________________________________________________________________________________________________
+    //if perfect kinematic predictions say we are below the desired altitude
+    //we retract the flaps (somewhat simple logic)
+    if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
+      {closeCloseFlap();break;}
+    //if we ever need to rely on this we're probably cooked
+    //this is just here to save a few points
+    //_____________________________________________________________________________________________________________
 
 
     // //stuff right after burnout
-    // if (timeElapsedSinceBurnout < 1000)
+    // if (timeElapsedSinceBurnout > 1000)
     // {
-    //   closeCloseFlap();
+    //   openOpenFlap();
     //   break;
     // }
-    // else if (timeElapsedSinceBurnout < 2000)
-    //   {openOpenFlap();break;}
+    // // else if (timeElapsedSinceBurnout < 2000)
+    // //   {openOpenFlap();break;}
 
-    // // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
-    // // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
-    // if (predictApogee(altitude, altitudeV, airBrakeDragCoef.getData()) >= DESIRED_APOGEE)
-    //   {openOpenFlap();}
-    // else //im sure this will never be the case
-    //   {closeCloseFlap();}
+    // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
+    // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
+    if (predictApogee(altitude, altitudeV, COEF_DRAG_FLAPDEPLOYED) >= DESIRED_APOGEE)
+      {openOpenFlap();}
+    else //im sure this will never be the case
+      {closeCloseFlap();}
     
 
 
