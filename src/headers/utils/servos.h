@@ -11,5 +11,5 @@ void servoSetup();
 void openFlaps();
 void closeFlaps();
 void undeployChute();
-
+void detach();
 #endif // SERVOS_H

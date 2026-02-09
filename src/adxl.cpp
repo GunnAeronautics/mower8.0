@@ -10,13 +10,13 @@ extern double xAccel = 0.0;
 extern double yAccel = 0.0;
 extern double zAccel = 0.0;
 
-float X_OFFSET = -0.177698;
-float Y_OFFSET = 0.175353;
-float Z_OFFSET = 0.311556;
+float X_OFFSET = -0.294791;
+float Y_OFFSET = -0.069334;
+float Z_OFFSET = -0.518281;
 
-float X_SCALE = 0.972403;
-float Y_SCALE = 0.968674;
-float Z_SCALE = 1.010908;
+float X_SCALE = 0.965941;
+float Y_SCALE = 0.974706;
+float Z_SCALE = 1.003159;
 
 /* Assign a unique ID to this sensor at the same time */
 /* Using I2C on default Wire bus */

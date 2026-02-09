@@ -31,12 +31,18 @@ void moveFlaps(int power){
     servo3.write(angleToBlink(power));
     // servo4.write(angleToBlink(power));  
 }
+void detach(){
+  servo2.detach();
+  servo3.detach();
+  // servo1.detach();
+  servo4.attach(SERVO4_PIN);
+}
 void servoSetup(){
-    servo1.attach(SERVO1_PIN);
+    // servo1.attach(SERVO1_PIN);
     servo2.attach(SERVO2_PIN);
     servo3.attach(SERVO3_PIN);
     servo4.attach(SERVO4_PIN);
-  
+
     Serial.println("Servo Attached");
 
 

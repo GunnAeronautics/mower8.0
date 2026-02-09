@@ -128,33 +128,36 @@ float coefOfDrag(float accel, float v)
 bool accelerometerTime = false;
 void dragCoefProcessing(){
     dragCoefficient = coefOfDrag(altitudeAccel,altitudeV);
-    //airbrake deployed for first time
-    if (lastDragFlapDeployed == false && dragFlapDeployed == true){
-      lastDragFlapDeployed = true;
-      lastAirBrakeDeployTime = millis();
+
+
+    // //this code lowkey doing nothing VVV
+    // //airbrake deployed for first time
+    // if (lastDragFlapDeployed == false && dragFlapDeployed == true){
+    //   lastDragFlapDeployed = true;
+    //   lastAirBrakeDeployTime = millis();
       
-      accelerometerTime = true;
-      integratedAltitude = altitude;
-      integratedVelocity = altitudeV;
-    }
-    //airbrake retracted for first time
-    if (lastDragFlapDeployed == true && dragFlapDeployed == false){
-      lastDragFlapDeployed = false;
-      lastAirBrakeRetractTime = millis();
+    //   accelerometerTime = true;
+    //   integratedAltitude = altitude;
+    //   integratedVelocity = altitudeV;
+    // }
+    // //airbrake retracted for first time
+    // if (lastDragFlapDeployed == true && dragFlapDeployed == false){
+    //   lastDragFlapDeployed = false;
+    //   lastAirBrakeRetractTime = millis();
 
-    }
-    if (dragFlapDeployed == false &&
-        lastAirBrakeRetractTime < millis() - DRAG_FLAP_MOVE_TIME)//switch back to main altitude
-    { //sufficient time has passed so we can start taking measurements for the rolling avwerage
-      accelerometerTime = false;
-    }
+    // }
+    // if (dragFlapDeployed == false &&
+    //     lastAirBrakeRetractTime < millis() - DRAG_FLAP_MOVE_TIME)//switch back to main altitude
+    // { //sufficient time has passed so we can start taking measurements for the rolling avwerage
+    //   accelerometerTime = false;
+    // }
 
-    if (dragFlapDeployed &&
-        lastAirBrakeDeployTime < millis() - DRAG_FLAP_MOVE_TIME)
-    { //sufficient time has passed so we can start taking measurements for the rolling avwerage
+    // if (dragFlapDeployed &&
+    //     lastAirBrakeDeployTime < millis() - DRAG_FLAP_MOVE_TIME)
+    // { //sufficient time has passed so we can start taking measurements for the rolling avwerage
     
-      // airBrakeDragCoef.newData(dragCoefficient);
-    }
+    //   // airBrakeDragCoef.newData(dragCoefficient);
+    // }
   
 
 }
@@ -232,7 +235,7 @@ void dataLogging()
       String(-yAccel-GRAVITY, DATAPRECISION) + ',' +  // localAxis
 
       String(dragCoefficient, DATAPRECISION) + ',' +
-      String(predictApogee(altitude, altitudeV,dragCoefficient),DATAPRECISION) + ',' +  // apogee prediction
+      String(predictApogee(altitude, altitudeV, dragCoefficient),DATAPRECISION) + ',' +  // apogee prediction
       String(predictApogee(altitude, altitudeV, COEF_DRAG_FLAPDEPLOYED),DATAPRECISION) + ',' +  // apogee prediction
 
       (String)(parachuteDeployed*100) + ',' +
@@ -332,10 +335,10 @@ void loop() {
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
-  if (accelerometerTime){
-    altitude = integratedAltitude;
-    altitudeV = integratedVelocity;
-  }
+  // if (accelerometerTime){
+  //   altitude = integratedAltitude;
+  //   altitudeV = integratedVelocity;
+  // }
   altitude = newAltitude580;
   altitudeV = altitudeV580;
   // integratedVelocity += (zGlobalAccel-9.81)*deltaT/1000000.0;
@@ -444,6 +447,7 @@ void loop() {
     //detects launch if accel is above 50 m/s^2
     //safety altitude is above 2 meters
 
+    
     altitudeZero[zeroIndex] = 0;
     velocityZero[zeroIndex] = 0;
 
@@ -454,7 +458,7 @@ void loop() {
       altitudeZero[i] += velocityZero[i]*deltaT/1000000.0;
     }
 
-    if (altitudeAccel > 30.0f || altitude > 3.0f)//make sure the altitude accel axis is correct
+    if (altitudeAccel > 30.0f || altitude > 5.0f)//make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
@@ -477,7 +481,9 @@ void loop() {
     #pragma region
 
     dataLogging();
-    
+    closeSD();//writes to sd card cuz the hard times are over
+    openOpenSD();
+
     if (altitudeAccel < 0 || timeElapsed > 2000 || altitudeV < 0.5)
     //warning accel being under 0 does not neccecarily mean that thrust has stopped but it is close enough
     //timeElasped > 2000 is just a safety to make sure it deploys for whatever reason
@@ -501,6 +507,8 @@ void loop() {
   case 3: // coast up
     #pragma region
     dataLogging();
+    closeSD();//writes to sd card cuz the hard times are over
+    openOpenSD();
 
     //velocity less than 0.5 means the rocket is going down
     //timeElasped over 10 sec is safety
@@ -512,8 +520,9 @@ void loop() {
         flightStateAdvancementTrigger = 0;
         closeSD();//writes to sd card cuz the hard times are over
         openOpenSD();
+        
         closeCloseFlap(); //stows the airbrakes 
-
+        // detach();
       }
       break;//break stops the rest of the code from running
     }

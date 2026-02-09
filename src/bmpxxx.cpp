@@ -10,7 +10,7 @@ SPIClass mySPI;
 RollingAverage pressureRoll(8);
 RollingAverage temperatureRoll(8);
 
-RollingAverage altitudeVRoll(6);
+RollingAverage altitudeVRoll(10);
 // Raw sensor data
 float groundPressure = 0;
 float groundTemperature = 0;
