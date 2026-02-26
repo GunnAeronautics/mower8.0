@@ -42,7 +42,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
+int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int flapDeploymentTrigger = 0;         // counts # of times you should deploy flaps
@@ -75,9 +75,9 @@ void timeStuff()
     return;
 
   // arbitrary delay
-  while (micros() - lastT < 6000)
+  while (micros() - lastT < 10000)
   {
-    delayMicroseconds(10);
+    delayMicroseconds(1);
   }
 
   unsigned long now = micros();
@@ -406,12 +406,15 @@ void loop() {
     Serial.print(altitudeV,DATAPRECISION);
     Serial.print(",");
 
-    Serial.print("baroAccel: ");
+    Serial.print("accel: ");
     Serial.print(altitudeAccel,DATAPRECISION);
     Serial.print(", ");
-    Serial.print("GlobalZaccel: ");
-    Serial.print(zGlobalAccel,DATAPRECISION);
+    Serial.print("zenith: ");
+    Serial.print(zenith,DATAPRECISION);
     Serial.print(", ");
+    // Serial.print("accelY: ");
+    // Serial.print(accelBnoY,DATAPRECISION);
+    // Serial.print(", ");
     // Serial.print("GlobalZaccelAdxl: ");
     // Serial.print(axisComponent(getQuat(),xAccel, yAccel, zAccel, "Z+"),DATAPRECISION);
     // Serial.print(", ");

@@ -1,21 +1,21 @@
 #include "headers/sensors/imu.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
 // #define IMU_DEBUG
 #ifdef BNO055
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29, &Wire);
 uint8_t systemCali,gyroCali,accelCali,magCali;
 #endif
 #ifdef BNO085
-BNO08x bno;
+Adafruit_BNO08x bno08x(-1);
 #define BNO08X_ADDR 0x4A
+sh2_SensorValue_t sensorValue;
+
 #endif
 Quaternion orientation;
 Quaternion angularSpeed;
 Quaternion bnoOrientation;
 double MagX, MagY, MagZ;    // Gs
 
-double GyroX, GyroY, GyroZ; // deg / sec
+float GyroX, GyroY, GyroZ; // deg / sec
 float accelBnoX, accelBnoY, accelBnoZ;   // in m/s^2
 double accelBnoLinearX, accelBnoLinearY, accelBnoLinearZ;    // in m/s^2
 double zGlobalAccel,yGlobalAccel,xGlobalAccel; // in m/s^2
@@ -51,20 +51,31 @@ void writeRegister(uint8_t reg, uint8_t value) {
   }
 #ifdef BNO085
   void bnoSetup(){
-  if (bno.begin(BNO08X_ADDR, Wire) == false) {
-    Serial.println("BNO08x not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
-    while (1)
-      ;
+  if (!bno08x.begin_I2C()) {
+    // if (!bno08x.begin_UART(&Serial1)) {  // Requires a device with > 300 byte
+    // UART buffer! if (!bno08x.begin_SPI(BNO08X_CS, BNO08X_INT)) {
+    Serial.println("Failed to find BNO08x chip");
+    while (1) {
+      delay(10);
+    }
   }
   Serial.println("BNO08x found!");
 
-  if (bno.enableReport(SH2_ROTATION_VECTOR, 5000)){
-    Serial.println("BNO085 reporting mode configured!");
-  } 
-  else{
-    Serial.println("BNO085 reporting mode NOT configured!");
-
+  // if (bno.enableReport(SH2_ROTATION_VECTOR, 5000)){
+  //   Serial.println("BNO085 rotation reporting mode configured!");
+  // } 
+  // else{
+  //   Serial.println("BNO085 rotation reporting mode NOT configured!");
+  // }
+  // if (!bno08x.enableReport(SH2_ACCELEROMETER,10000)) {
+  //   Serial.println("Could not enable accelerometer");
+  // }
+  if (!bno08x.enableReport(SH2_ROTATION_VECTOR,10000)) {
+    Serial.println("Could not enable rotation");
   }
+  // if (!bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED,10000)) {
+  //   Serial.println("Could not enable gyro");
+  // }
 }
 #endif
 #ifdef BNO055
@@ -247,78 +258,63 @@ void bnoSetup()
   #ifdef BNO085
 
   void IMUdata(int deltaT){
+  bool accelUpdated = false;
+  bool gyroUpdated = false;
+  bool rotUpdated   = false;
 
 
+  if (bno08x.getSensorEvent(&sensorValue)) {
 
-    // Has a new event come in on the Sensor Hub Bus?
-    if (bno.getSensorEvent() == true) {
+    switch (sensorValue.sensorId) {
 
-      // is it the correct sensor data we want?
-      if (bno.getSensorEventID() == SENSOR_REPORTID_ROTATION_VECTOR) {
-        bnoW = bno.getQuatReal();
-        bnoI = bno.getQuatI();
-        bnoJ = bno.getQuatJ();
-        bnoK = bno.getQuatK();
+    case SH2_ACCELEROMETER:
+      if (accelUpdated){
+        break;
+      }
+      accelBnoX = sensorValue.un.accelerometer.x;
+      accelBnoY = sensorValue.un.accelerometer.y;
+      accelBnoZ = sensorValue.un.accelerometer.z;
+      accelUpdated = true;
+
+      break;
+ 
+    case SH2_GYROSCOPE_CALIBRATED:
+      if (gyroUpdated){
+        break;
+      }
+      GyroY = sensorValue.un.gyroscope.y;
+      gyroUpdated = true;
+      break;
+    case SH2_ROTATION_VECTOR:
+      // if (rotUpdated){
+      //   break;
+      // }
+        bnoW = sensorValue.un.rotationVector.real;
+        bnoI = sensorValue.un.rotationVector.i;
+        bnoJ = sensorValue.un.rotationVector.j;
+        bnoK = sensorValue.un.rotationVector.k;
         bnoOrientation.setQuat(bnoW,bnoI,bnoJ,bnoK);
         uint8_t accuracyThing;
-        accelBnoX = bno.getAccelX();
-        accelBnoY = bno.getAccelY();
-        accelBnoZ = bno.getAccelZ();
-        accelBnoLinearY = bno.getLinAccelY();
+        // 
+        // accelBnoLinearY = bno.getLinAccelY() * pow(2,8*-1);
 
-        GyroY = bno.getGyroY();
-        bno.getAccelAccuracy();
+        // GyroY = bno.getGyroY() * pow(2,9*-1);
+        // bno.getAccelAccuracy();
 
-        double quatRadianAccuracy = bno.getQuatRadianAccuracy();
+        // double quatRadianAccuracy = bno.getQuatRadianAccuracy();
         zGlobalAccel = axisComponent(bnoOrientation, accelBnoX, accelBnoY, accelBnoZ, "Z+");
         // writeZGlobalAccel(newZGlobalAccel);
 
         zenith = angleBetweenAxis(bnoOrientation,"Y+");
-        
-        #ifdef IMU_DEBUG
-        // Serial.print("Quaternion: ");
-        // Serial.print(bnoW);
-        // Serial.print(", ");
-        // Serial.print(bnoI);
-        // Serial.print(", ");
-        // Serial.print(bnoJ);
-        // Serial.print(", ");
-        // Serial.print(bnoK);
-        // Serial.println();
-
-        Serial.print(">");
-        Serial.print("DeltaT: ");
-        Serial.print(deltaT);
-        Serial.print(", ");
-        Serial.print("Accel: ");
-        Serial.print(accelBnoY, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("LinAccel: ");
-        Serial.print(accelBnoLinearY, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("GlobalAccel: ");
-        Serial.print(zGlobalAccel, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("zenith: ");
-        Serial.print(zenith, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("Roll rate: ");
-        Serial.print(GyroY, DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("Accel accuracy: ");
-        Serial.print(bno.getAccelAccuracy(), DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("Lin Accel accuracy: ");
-        Serial.print(bno.getLinAccelAccuracy(), DATAPRECISION);
-        Serial.print(", ");
-        Serial.print("gyro accuracy: ");
-        Serial.print(bno.getGyroAccuracy(), DATAPRECISION);
-        Serial.print(", ");
-        Serial.println();
-        #endif
-      }
-    }
+        rotUpdated = true;
+        break;
+   
+  //  if (accelUpdated && gyroUpdated && rotUpdated) {
+  //   break;
+  //   }
+  }
 
   }
+}
 
   #endif

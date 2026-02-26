@@ -8,7 +8,7 @@
 #include <Adafruit_BNO055.h>
 #endif
 #ifdef BNO085
-#include "SparkFun_BNO08x_Arduino_Library.h"
+#include "Adafruit_BNO08x.h"
 #endif
 
 #include <Wire.h>
@@ -18,7 +18,7 @@ extern Quaternion orientation;
 extern Quaternion bnoOrientation;
 
 
-extern double GyroX, GyroY, GyroZ; // deg / sec
+extern float GyroX, GyroY, GyroZ; // deg / sec
 
 extern float accelBnoX, accelBnoY, accelBnoZ;   // in m/s^2
 extern double accelBnoLinearX, accelBnoLinearY, accelBnoLinearZ;    // in m/s^2
