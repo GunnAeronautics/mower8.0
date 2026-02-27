@@ -330,6 +330,34 @@ void downwardLogic()
     deployChute();
     parachuteDeployed = true;
   }
+
+
+  if (parachuteDeployed) {//after parachute deploy micro optimization
+      float tGround = timeToGround(altitude, altitudeV); // sec
+
+      float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
+      if (remainingMs < 50) //more clamps
+        remainingMs = 50;
+
+      float remainingSec = remainingMs / 1000.0f;
+
+      float desiredV = (0 - altitude) / remainingSec; // m/s
+
+      const float HYSTERESIS = 0.2f;
+      if (altitude <= 5){ // if near ground
+        closeCloseFlap();
+        return;
+      } 
+      if (remainingSec > tGround - HYSTERESIS)
+        {
+          openOpenFlap();
+        }
+      else if (remainingSec < tGround + HYSTERESIS)
+        {
+          closeCloseFlap();
+        }
+      
+  }
 }
 
 void loop()
@@ -549,7 +577,7 @@ void loop()
 
     // if perfect kinematic predictions say we are below the desired altitude
     // we retract the flaps (somewhat simple logic)
-    if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
+    if (predictApogeeIdeal(altitude, integratedVelocity) < DESIRED_APOGEE)
     {
       closeCloseFlap();
       break;
@@ -569,7 +597,7 @@ void loop()
 
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
-    if (predictApogee(altitude, altitudeV, COEF_DRAG_FLAPDEPLOYED) >= DESIRED_APOGEE)
+    if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) >= DESIRED_APOGEE)
     {
       openOpenFlap();
     }
@@ -608,32 +636,7 @@ void loop()
       timesTheRocketIsStill = 0;
     }
 
-    if (parachuteDeployed) {//after parachute deploy micro optimization
-      float tGround = timeToGround(altitude, altitudeV); // sec
-
-      float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
-      if (remainingMs < 50) //more clamps
-        remainingMs = 50;
-
-      float remainingSec = remainingMs / 1000.0f;
-
-      float desiredV = (0 - altitude) / remainingSec; // m/s
-
-      const float HYSTERESIS = 0.2f;
-      if (altitude <= 5){ // if near ground
-        closeCloseFlap();
-        break;
-      } 
-      if (remainingSec > tGround - HYSTERESIS)
-        {
-          openOpenFlap();
-        }
-      else if (remainingSec < tGround + HYSTERESIS)
-        {
-          closeCloseFlap();
-        }
-      
-  }
+    
     break;
 #pragma endregion
   case 5: // lawn
