@@ -624,7 +624,7 @@ void loop()
       timesTheRocketIsStill = 0;
     }
 
-    if (parachuteDeployed) {
+    if (parachuteDeployed) {//after parachute deploy micro optimization
       float tGround = timeToGround(altitude, altitudeV);
 
       float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
@@ -640,16 +640,16 @@ void loop()
       if (altitude <= 5){ // if near ground
         closeCloseFlap();
         break;
-      } else if (tGround < groundThreshold || desiredV < 0.0f) {
-        if (altitudeV < (desiredV - HYSTERESIS))
+      } 
+      if (altitudeV < (desiredV - HYSTERESIS))
         {
           openOpenFlap();
         }
-        else if (altitudeV > (desiredV + HYSTERESIS))
+      else if (altitudeV > (desiredV + HYSTERESIS))
         {
           closeCloseFlap();
         }
-      }
+      
   }
     break;
 #pragma endregion
