@@ -175,22 +175,7 @@ void closeCloseFlap()
   closeFlaps();
 }
 
-struct SimplePID {
-    float kp, ki, kd;
-    float integral;
-    float lastError;
-    SimplePID(float P = 0.0f, float I = 0.0f, float D = 0.0f) : kp(P), ki(I), kd(D), integral(0.0f), lastError(0.0f) {}
-    float update(float setpoint, float measurement, float dt) {
-        float err = setpoint - measurement;
-        integral += err * dt;
-        float deriv = (dt > 0.0f) ? (err - lastError) / dt : 0.0f;
-        lastError = err;
-        return kp * err + ki * integral + kd * deriv;
-    }
-    void reset() { integral = lastError = 0.0f; }
-};
-
-static inline float timeToGround(float altitude, float altitudeV) {//ret
+float timeToGround(float altitude, float altitudeV) {//ret
     if (altitude <= 0.0f) return 0.0f;
     if (altitudeV >= -0.01f) return INFINITY;
     return abs(altitude / -altitudeV);
@@ -624,7 +609,7 @@ void loop()
     }
 
     if (parachuteDeployed) {//after parachute deploy micro optimization
-      float tGround = timeToGround(altitude, altitudeV);
+      float tGround = timeToGround(altitude, altitudeV); // sec
 
       float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
       if (remainingMs < 50) //more clamps
@@ -634,17 +619,16 @@ void loop()
 
       float desiredV = (0 - altitude) / remainingSec; // m/s
 
-      const float groundThreshold = 5.0f;
       const float HYSTERESIS = 0.2f;
       if (altitude <= 5){ // if near ground
         closeCloseFlap();
         break;
       } 
-      if (altitudeV < (desiredV - HYSTERESIS))
+      if (remainingSec > tGround - HYSTERESIS)
         {
           openOpenFlap();
         }
-      else if (altitudeV > (desiredV + HYSTERESIS))
+      else if (remainingSec < tGround + HYSTERESIS)
         {
           closeCloseFlap();
         }
