@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 
-#define FAKE_IMU true
+#define FAKE_IMU false
 // #define DEBUG
 
 // ============================================================================
@@ -67,7 +67,7 @@
 // Parachute and drag flap configuration
 // #define PARACHUTE_TERM_VELOCITY 6.5 // m/s
 #define PARACHUTE_TERM_VELOCITY 6.5// m/s real
-
+#define MASS 0.630//after motor burnout kg
 //WARNING THIS IS FROM OPENROCKET 1/17/26
 
 #define COEF_DRAG_FLAPDEPLOYED 0.0065 // accelY / v / v of the rocket when flaps fully deployed

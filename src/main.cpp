@@ -363,6 +363,8 @@ void loop()
   // integratedVelocity += (zGlobalAccel-9.81)*deltaT/1000000.0;
 
   altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
+  dragCoefficient = abs((altitudeAccel + GRAVITY) / pow(altitudeV, 2));
+
   // altitudeAccel = zGlobalAccel;
 
   integratedVelocity += altitudeAccel * deltaT / 1000000.0;
@@ -372,7 +374,6 @@ void loop()
     maxAltitude = altitude;
   }
 
-  dragCoefficient = abs((altitudeAccel + GRAVITY) / pow(altitudeV, 2));
 
 #ifdef DEBUG
   delay(1000); // you only want a delay because serial printing is gets bogged
@@ -503,8 +504,6 @@ void loop()
 #pragma region
 
     dataLogging();
-    closeSD(); // writes to sd card cuz the hard times are over
-    openOpenSD();
 
     if (altitudeAccel < 0 || timeElapsed > 2000 || altitudeV < 0.5)
     // warning accel being under 0 does not neccecarily mean that thrust has stopped but it is close enough
