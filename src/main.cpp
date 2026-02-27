@@ -352,8 +352,8 @@ void loop() {
       maxAltitude = altitude;
     }
 
-  dragCoefficient = abs(altitudeAccel / pow(altitudeV, 2));
-
+  dragCoefficient = abs((altitudeAccel+GRAVITY) / pow(altitudeV, 2));
+ 
 #ifdef DEBUG
   delay(1000);  // you only want a delay because serial printing is gets bogged
                 // down
