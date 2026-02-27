@@ -510,8 +510,6 @@ void loop() {
   case 3: // coast up
     #pragma region
     dataLogging();
-    closeSD();//writes to sd card cuz the hard times are over
-    openOpenSD();
 
     //velocity less than 0.5 means the rocket is going down
     //timeElasped over 10 sec is safety
