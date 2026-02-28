@@ -67,6 +67,9 @@ float maxAltitude = 0;
 double noAirbrakeDragCoef = 0.0021665;
 double AirbrakeDragCoef = 0.0021665 * 2;
 
+const float HYSTERESIS = 0.2f;
+bool microReady = false;
+
 // everything related to timing
 void timeStuff()
 {
@@ -331,33 +334,34 @@ void downwardLogic()
     parachuteDeployed = true;
   }
 
+  if (parachuteDeployed) {//after parachute deploy micro optimization
+    if (microReady){ // after 2 second delay
+        float tGround = timeToGround(altitude, altitudeV); // sec
 
-  // if (parachuteDeployed) {//after parachute deploy micro optimization
-  //     float tGround = timeToGround(altitude, altitudeV); // sec
+        float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
+        if (remainingMs < 50) //more clamps
+          remainingMs = 50;
 
-  //     float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
-  //     if (remainingMs < 50) //more clamps
-  //       remainingMs = 50;
+        float remainingSec = remainingMs / 1000.0f;
 
-  //     float remainingSec = remainingMs / 1000.0f;
-
-  //     float desiredV = (0 - altitude) / remainingSec; // m/s
-
-  //     const float HYSTERESIS = 0.2f;
-  //     if (altitude <= 5){ // if near ground
-  //       closeCloseFlap();
-  //       return;
-  //     } 
-  //     if (remainingSec > tGround - HYSTERESIS)
-  //       {
-  //         openOpenFlap();
-  //       }
-  //     else if (remainingSec < tGround + HYSTERESIS)
-  //       {
-  //         closeCloseFlap();
-  //       }
+        if (altitude <= 5){ // if near ground
+          closeCloseFlap();
+          return;
+        } 
+        if (remainingSec > tGround - HYSTERESIS)
+          {
+            openOpenFlap();
+          }
+        else if (remainingSec < tGround + HYSTERESIS)
+          {
+            closeCloseFlap();
+          }
+      }else {
+        sleep(2);
+        microReady = true;
+      }
       
-  // }
+  }
 }
 int lastDeployTime = 0;
 void loop()
