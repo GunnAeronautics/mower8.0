@@ -577,7 +577,7 @@ void loop()
 
     // if perfect kinematic predictions say we are below the desired altitude
     // we retract the flaps (somewhat simple logic)
-    if (predictApogeeIdeal(altitude, integratedVelocity) < DESIRED_APOGEE)
+    if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
     {
       closeCloseFlap();
       break;
@@ -597,7 +597,7 @@ void loop()
 
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
-    if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) > DESIRED_APOGEE)
+    if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) > 228.6)
     {
       openOpenFlap();
     }
