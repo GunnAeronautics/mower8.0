@@ -42,7 +42,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int flapDeploymentTrigger = 0; // counts # of times you should deploy flaps
@@ -332,32 +332,32 @@ void downwardLogic()
   }
 
 
-  if (parachuteDeployed) {//after parachute deploy micro optimization
-      float tGround = timeToGround(altitude, altitudeV); // sec
+  // if (parachuteDeployed) {//after parachute deploy micro optimization
+  //     float tGround = timeToGround(altitude, altitudeV); // sec
 
-      float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
-      if (remainingMs < 50) //more clamps
-        remainingMs = 50;
+  //     float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
+  //     if (remainingMs < 50) //more clamps
+  //       remainingMs = 50;
 
-      float remainingSec = remainingMs / 1000.0f;
+  //     float remainingSec = remainingMs / 1000.0f;
 
-      float desiredV = (0 - altitude) / remainingSec; // m/s
+  //     float desiredV = (0 - altitude) / remainingSec; // m/s
 
-      const float HYSTERESIS = 0.2f;
-      if (altitude <= 5){ // if near ground
-        closeCloseFlap();
-        return;
-      } 
-      if (remainingSec > tGround - HYSTERESIS)
-        {
-          openOpenFlap();
-        }
-      else if (remainingSec < tGround + HYSTERESIS)
-        {
-          closeCloseFlap();
-        }
+  //     const float HYSTERESIS = 0.2f;
+  //     if (altitude <= 5){ // if near ground
+  //       closeCloseFlap();
+  //       return;
+  //     } 
+  //     if (remainingSec > tGround - HYSTERESIS)
+  //       {
+  //         openOpenFlap();
+  //       }
+  //     else if (remainingSec < tGround + HYSTERESIS)
+  //       {
+  //         closeCloseFlap();
+  //       }
       
-  }
+  // }
 }
 
 void loop()
@@ -403,8 +403,8 @@ void loop()
           // dataLogging();
     //
     dataLogging();
-    closeSD();
-    openOpenSD();
+    // closeSD();
+    // openOpenSD();
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
@@ -518,13 +518,13 @@ void loop()
 
     dataLogging();
 
-    if (altitudeAccel < 0 || timeElapsed > 2000 || altitudeV < 0.5)
+    if (altitudeAccel < 0 || timeElapsed > 2000 || altitudeV < -1)
     // warning accel being under 0 does not neccecarily mean that thrust has stopped but it is close enough
     // timeElasped > 2000 is just a safety to make sure it deploys for whatever reason
     // altitudeV < 0.5 is another cooked safety just in the rocket like hella tumbles
     {
       flightStateAdvancementTrigger++;
-      if (flightStateAdvancementTrigger > 3)
+      if (flightStateAdvancementTrigger > 10)
       {
         burnoutTimeStamp = millis();
 
@@ -587,17 +587,17 @@ void loop()
     //_____________________________________________________________________________________________________________
 
     // //stuff right after burnout
-    if (timeElapsedSinceBurnout > 2000)
-    {
-      openOpenFlap();
-      break;
-    }
+    // if (timeElapsedSinceBurnout > 2000)
+    // {
+    //   openOpenFlap();
+    //   break;
+    // }
     // else if (timeElapsedSinceBurnout < 2000)
     //   {openOpenFlap();break;}
 
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
-    if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) >= DESIRED_APOGEE)
+    if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) > DESIRED_APOGEE)
     {
       openOpenFlap();
     }

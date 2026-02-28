@@ -66,7 +66,7 @@
 //WARNING DOES NOT ACCOUNT FOR THE 
 // Parachute and drag flap configuration
 // #define PARACHUTE_TERM_VELOCITY 6.5 // m/s
-#define PARACHUTE_TERM_VELOCITY 6.5// m/s real
+#define PARACHUTE_TERM_VELOCITY 6.65// m/s real
 #define MASS 0.630//after motor burnout kg
 //WARNING THIS IS FROM OPENROCKET 1/17/26
 
