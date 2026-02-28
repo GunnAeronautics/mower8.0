@@ -359,7 +359,7 @@ void downwardLogic()
       
   // }
 }
-
+int lastDeployTime = 0;
 void loop()
 {
   timeStuff();
@@ -597,15 +597,19 @@ void loop()
 
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
+    if (millis()-lastDeployTime > 500){
     if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) > 228.6)
     {
       openOpenFlap();
+      lastDeployTime = millis();
     }
     else // im sure this will never be the case
     {
       closeCloseFlap();
-    }
+      lastDeployTime = millis();
 
+    }
+    }
     break;
 #pragma endregion
   case 4: // we going down
