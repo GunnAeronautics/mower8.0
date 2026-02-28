@@ -402,9 +402,9 @@ void loop()
 #pragma region
           // dataLogging();
     //
-    // dataLogging();
-    // closeSD();
-    // openOpenSD();
+    dataLogging();
+    closeSD();
+    openOpenSD();
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
@@ -587,13 +587,13 @@ void loop()
     //_____________________________________________________________________________________________________________
 
     // //stuff right after burnout
-    // if (timeElapsedSinceBurnout > 1000)
-    // {
-    //   openOpenFlap();
-    //   break;
-    // }
-    // // else if (timeElapsedSinceBurnout < 2000)
-    // //   {openOpenFlap();break;}
+    if (timeElapsedSinceBurnout > 2000)
+    {
+      openOpenFlap();
+      break;
+    }
+    // else if (timeElapsedSinceBurnout < 2000)
+    //   {openOpenFlap();break;}
 
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
