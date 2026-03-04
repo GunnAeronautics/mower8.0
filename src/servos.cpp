@@ -26,9 +26,11 @@ void deployChute(){
 void undeployChute(){
     servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);
 }
+//0 to 1
 void moveFlaps(int power){
-    servo2.write(angleToBlink(power));
-    servo3.write(angleToBlink(power));
+    servo2.write((int)(power * (DRAG_FLAPS_DEPLOYED_ANGLE - DRAG_FLAPS_UNDEPLOYED_ANGLE) + DRAG_FLAPS_UNDEPLOYED_ANGLE));
+    servo3.write((int)(power * (DRAG_FLAPS_DEPLOYED_ANGLE - DRAG_FLAPS_UNDEPLOYED_ANGLE) + DRAG_FLAPS_UNDEPLOYED_ANGLE));
+
     // servo4.write(angleToBlink(power));  
 }
 void detach(){
@@ -39,7 +41,7 @@ void detach(){
 }
 void servoSetup(){
     // servo1.attach(SERVO1_PIN);
-    servo2.attach(SERVO2_PIN);
+    servo2.attach(SERVO1_PIN);
     servo3.attach(SERVO3_PIN);
     servo4.attach(SERVO4_PIN);
 

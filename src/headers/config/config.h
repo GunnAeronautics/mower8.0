@@ -70,7 +70,8 @@
 #define MASS 0.630//after motor burnout kg
 //WARNING THIS IS FROM OPENROCKET 1/17/26
 
-#define COEF_DRAG_FLAPDEPLOYED 0.0065 // accelY / v / v of the rocket when flaps fully deployed
+#define COEF_DRAG_FLAPDEPLOYED 0.0040 // accelY / v / v of the rocket when flaps fully deployed
+#define COEF_DRAG_FLAPUNDEPLOYED 0.0020 // accelY / v / v of the rocket when flaps fully deployed
 
 // Servo deployment angles
 #define DRAG_FLAPS_DEPLOYED_ANGLE 180

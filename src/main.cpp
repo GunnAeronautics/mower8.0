@@ -52,6 +52,8 @@ double altitudeAccel = 0;
 float altitudeV = 0;
 
 double dragCoefficient = 0;
+double desiredDragCoef = 0;
+double airbrakePower = 0;
 double integratedAltitude = 0;
 double integratedVelocity = 0;
 // KalmanVelocityEstimator kalman(1, 3);
@@ -130,7 +132,7 @@ float coefOfDrag(float accel, float v)
 bool accelerometerTime = false;
 void dragCoefProcessing()
 {
-  dragCoefficient = coefOfDrag(altitudeAccel, altitudeV);
+  dragCoefficient = coefOfDrag(altitudeAccel, integratedVelocity);
 
   // //this code lowkey doing nothing VVV
   // //airbrake deployed for first time
@@ -161,7 +163,27 @@ void dragCoefProcessing()
   //   // airBrakeDragCoef.newData(dragCoefficient);
   // }
 }
+float inverseApogee(double alt, double desiredApogee, double v) { // Working & Tested
+  float searchRangeH = 1;
+  float searchRangeL = 0;//SEARCH RANGE IS 0<m<1
+  float mid;
+  for (int i = 0; i < 20; i++) {
+    mid = (searchRangeL + searchRangeH) / 2.0;
+    float prediction = predictApogee(alt, v, mid);
 
+    if (prediction < desiredApogee) { // to the left of desired
+      searchRangeH = mid;
+    } else if (prediction > desiredApogee) {
+      searchRangeL = mid;
+    }
+  }
+  return mid;
+}
+
+//returns percentage from 0 to 1
+float dragCoefToAirbrake(double dragCoef){
+  return ((dragCoef- COEF_DRAG_FLAPUNDEPLOYED)/(COEF_DRAG_FLAPDEPLOYED - COEF_DRAG_FLAPUNDEPLOYED));
+}
 void openOpenFlap()
 {
   dragFlapDeployed = true;
@@ -203,11 +225,15 @@ void writeDataHeader()
       "yAxisAccel,"
 
       "drag coef,"
+      "desired drag coef,"
+
       "noAirbrake PredApogee,"
       "airbrake PredApogee,"
 
       "Chute Deployed,"
       "dragFlaps deployed,"
+      "airbrakePower,"
+
       "accelerometer time,"
 
       "flight state,"
@@ -242,11 +268,15 @@ void dataLogging()
       String(-yAccel - GRAVITY, DATAPRECISION) + ',' +      // localAxis
 
       String(dragCoefficient, DATAPRECISION) + ',' +
-      String(predictApogee(altitude, altitudeV, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
-      String(predictApogee(altitude, altitudeV, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
+      String(desiredDragCoef, DATAPRECISION) + ',' +
+
+      String(predictApogee(altitude, integratedVelocity, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
+      String(predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
 
       (String)(parachuteDeployed * 100) + ',' +
       (String)(dragFlapDeployed * 100) + ',' +
+      (String)(airbrakePower * 100) + ',' +
+
       (String)(accelerometerTime * 100) + ',' +
       (String)(flightState * 100) + ',' +
 
@@ -315,6 +345,7 @@ void setup()
   // delay(5000);
 }
 
+int paraDeployTime = 0;
 void downwardLogic()
 {
   // function of altitude and function of altitude for optimal parachute deployment intercept
@@ -333,9 +364,11 @@ void downwardLogic()
     deployChute();
     parachuteDeployed = true;
   }
-
+  if (parachuteDeployed == false){
+    paraDeployTime = millis();
+  }
+  if ((millis()-paraDeployTime) > 2000){
   if (parachuteDeployed) {//after parachute deploy micro optimization
-    if (microReady){ // after 2 second delay
         float tGround = timeToGround(altitude, altitudeV); // sec
 
         float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
@@ -356,11 +389,7 @@ void downwardLogic()
           {
             closeCloseFlap();
           }
-      }else {
-        sleep(2);
-        microReady = true;
-      }
-      
+    }   
   }
 }
 int lastDeployTime = 0;
@@ -601,19 +630,9 @@ void loop()
 
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
-    if (millis()-lastDeployTime > 500){
-    if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) > 228.6)
-    {
-      openOpenFlap();
-      lastDeployTime = millis();
-    }
-    else // im sure this will never be the case
-    {
-      closeCloseFlap();
-      lastDeployTime = millis();
-
-    }
-    }
+    desiredDragCoef = inverseApogee(altitude,DESIRED_APOGEE,integratedVelocity);
+    airbrakePower = dragCoefToAirbrake(desiredDragCoef);
+    moveFlaps(airbrakePower);
     break;
 #pragma endregion
   case 4: // we going down
