@@ -25,16 +25,16 @@
 //   - Parachute undeployed: 10°
 
 // Time variables
-unsigned long lastT;
+volatile unsigned long lastT;
 volatile unsigned static int deltaT;
 unsigned long startTimeStamp = 0;   // ms
 unsigned long burnoutTimeStamp = 0; // ms
 
-unsigned long timeElapsed = 0; // time elapsed in flight (ms)
+volatile unsigned long timeElapsed = 0; // time elapsed in flight (ms)
 unsigned long timeElapsedSinceBurnout = 0;
 
-int lastMovementT = 0; // ms
-float altitude = 0;
+volatile int lastMovementT = 0; // ms
+volatile float altitude = 0;
 
 // Deployment states
 bool dragFlapDeployed = false;
@@ -71,6 +71,7 @@ double AirbrakeDragCoef = 0.0021665 * 2;
 
 const float HYSTERESIS = 0.2f;
 bool microReady = false;
+int microReadyTime = 0;
 
 // everything related to timing
 void timeStuff()
@@ -200,10 +201,13 @@ void closeCloseFlap()
   closeFlaps();
 }
 
-float timeToGround(float altitude, float altitudeV) {//ret
-    if (altitude <= 0.0f) return 0.0f;
-    if (altitudeV >= -0.01f) return INFINITY;
-    return abs(altitude / -altitudeV);
+float timeToGround(float altitude, float altitudeV)
+{ // ret
+  if (altitude <= 0.0f)
+    return 0.0f;
+  if (altitudeV >= -0.01f)
+    return INFINITY;
+  return abs(altitude / -altitudeV);
 }
 
 void writeDataHeader()
@@ -348,6 +352,44 @@ void setup()
 int paraDeployTime = 0;
 void downwardLogic()
 {
+  if (parachuteDeployed)
+  { // after parachute deploy micro optimization
+    if (microReady)
+    {                                                    // after 2 second delay
+      float tGround = timeToGround(altitude, altitudeV); // sec
+
+      float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
+      if (remainingMs < 50) // more clamps
+        remainingMs = 50;
+
+      float remainingSec = remainingMs / 1000.0f;
+
+      if (altitude <= 5)
+      { // if near ground
+        closeCloseFlap();
+        return;
+      }
+      if (remainingSec > tGround - HYSTERESIS)
+      {
+        openOpenFlap();
+      }
+      else if (remainingSec < tGround + HYSTERESIS)
+      {
+        closeCloseFlap();
+      }
+      return;
+    }
+    else
+    { // 2 second delay
+      if (microReadyTime + 2000 < timeElapsed)
+      {
+        microReady = true;
+      }
+      microReadyTime = timeElapsed;
+      return;
+    }
+  }
+
   // function of altitude and function of altitude for optimal parachute deployment intercept
   // the logic just works out :D
   if ((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY >
@@ -392,6 +434,8 @@ void downwardLogic()
     }   
   }
 }
+}
+
 int lastDeployTime = 0;
 void loop()
 {
@@ -420,7 +464,6 @@ void loop()
     maxAltitude = altitude;
   }
 
-
 #ifdef DEBUG
   delay(1000); // you only want a delay because serial printing is gets bogged
                // down
@@ -430,7 +473,7 @@ void loop()
   switch (flightState)
   {
   case 0: // happy data printing mode
-    // dataLogging();
+          // dataLogging();
 
 #pragma region
           // dataLogging();
@@ -505,7 +548,6 @@ void loop()
 
   case 1: // pad
 #pragma region
-
 
     Serial.print("Waiting on Pad");
     Serial.print("Accel: ");
@@ -663,7 +705,6 @@ void loop()
       timesTheRocketIsStill = 0;
     }
 
-    
     break;
 #pragma endregion
   case 5: // lawn
