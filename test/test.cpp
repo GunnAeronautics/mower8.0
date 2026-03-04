@@ -126,7 +126,8 @@ TEST(LOOP, DeployableCoastDown)
     downwardLogic(); // testing for non deploy case
     EXPECT_EQ(parachuteDeployed, false) << "Unexpected parachute deployment";
 
-    microReady, parachuteDeployed = true;
+    microReady = true;
+    parachuteDeployed = true;
     timeElapsed = 0;
     altitude = 100.0f;
     altitudeV = 1.0f;
