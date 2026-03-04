@@ -1,3 +1,78 @@
+# Rocket Unit Test
+
+## Overview
+
+* Implements a **Unit Test** for `loop()`
+* Made using **Google Test**
+* Ensures correct state transitions and deployment math/logic
+
+---
+
+## Flight States
+
+* **1 – Pad** -> On launch pad/rod
+* **2 – Ascent** -> Flight
+* **3 – Coast Up** -> Burnout/Coasting
+* **4 – Coast Down** -> Falling
+
+---
+
+## What is Tested?
+
+### Pad Transition
+
+* No transition when acceleration is low
+* Transitions to **Ascent (State 2)** when launch acceleration detected
+
+### Ascent
+
+* Resets advancement trigger correctly
+* Detects burnout (negative acceleration)
+* Transitions to **Coast Up State(3)**
+
+### Coast Up (Deployable Logic)
+
+* Detects apogee conditions (low velocity + time safety)
+* Transitions to **Falling (State 4)**
+* Resets advancement trigger
+
+### Drag Flap (Bang Bang Control)
+
+* Deploys if altitude exceeds desired apogee
+* Closes if below desired apogee
+* Deploys based on predicted apogee
+* Handles edge cases (negative altitude, timing constraints)
+
+### Coast Down
+
+* Deploys parachute if:
+
+- Predicted ground impact is too fast
+- Altitude is too low
+* Prevents unexpected deployment
+* Controls drag flap behavior near ground
+
+---
+
+## Variables
+
+* `flightState`
+* `altitude`
+* `altitudeV`
+* `altitudeAccel`
+* `timeElapsed`
+* `flightStateAdvancementTrigger`
+* `dragFlapDeployed`
+* `parachuteDeployed`
+
+---
+
+## Purpose
+
+* Ensures correct **flight behavior**.
+* Validates deployment logic before use.
+* Covers all casses and operations.
+
 
 This directory is intended for PlatformIO Test Runner and project tests.
 

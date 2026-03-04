@@ -31,6 +31,7 @@ extern int DESIRED_FLIGHT_TIME;
 extern bool parachuteDeployed; 
 extern bool microReady; // delay
 extern bool dragFlapDeployed;
+extern bool microReady;
 
 
 // extra variable
@@ -39,5 +40,6 @@ extern float remainingSec;
 extern void loop();
 extern double predictApogee(double alt, double v, double dragCoef);
 extern double predictApogeeIdeal(double alt, double v);
+extern void downwardLogic();
 
 #endif
