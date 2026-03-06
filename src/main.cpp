@@ -434,7 +434,7 @@ void downwardLogic()
     }   
   }
 }
-}
+
 
 int lastDeployTime = 0;
 void loop()
@@ -675,6 +675,7 @@ void loop()
     desiredDragCoef = inverseApogee(altitude,DESIRED_APOGEE,integratedVelocity);
     airbrakePower = dragCoefToAirbrake(desiredDragCoef);
     moveFlaps(airbrakePower);
+
     break;
 #pragma endregion
   case 4: // we going down
