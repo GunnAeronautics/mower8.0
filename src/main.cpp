@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <math.h>
 // #include <SimpleKalmanFilter.h>
-
+#include "SPIFFS.h"
 // Configuration and constants
 #include "headers/config/config.h"
 
@@ -14,7 +14,7 @@
 #include "headers/sensors/adxl.h"
 #include "headers/sensors/bmpxxx.h"
 #include "headers/sensors/imu.h"
-#include "headers/utils/sdcard.h"
+// #include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -62,6 +62,7 @@ float CdError;
 unsigned long lastAirBrakeDeployTime = 0;
 unsigned long lastAirBrakeRetractTime = 0;
 float maxAltitude = 0;
+File file;
 
 float airbrakeAngle = 0;
 const float HYSTERESIS = 0.2f;
@@ -179,7 +180,24 @@ float timeToGround(float altitude, float altitudeV)
     return INFINITY;
   return abs(altitude / -altitudeV);
 }
+void openOpenSD(){
+  file = SPIFFS.open("/log.csv", FILE_APPEND);
+}
+void closeSD(){
+    file.close();
 
+}
+void logData(String data){
+  file.println(data);
+
+}
+void dumpLogs(){
+  file = SPIFFS.open("/log.csv");
+  while(file.available()){
+    Serial.write(file.read());
+  }
+  file.close();
+}
 void writeDataHeader()
 {
   String datalogHeader =
@@ -267,6 +285,8 @@ void dataLogging()
 }
 
 double altitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+double baroAltitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 double velocityZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int zeroIndex = 0;
 void setup()
@@ -287,8 +307,13 @@ void setup()
 
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
-
-  sdSetup();
+  if (!SPIFFS.begin(true)){
+    Serial.println("SPIFF FAILED");
+    return;
+  }
+  file  = SPIFFS.open("/log.csv",FILE_WRITE);
+  file.close();
+  // sdSetup();
   writeDataHeader();
   closeSD();
   openOpenSD();
@@ -365,6 +390,7 @@ void downwardLogic()
 }
 
 
+double groundAlt = 0;
 int lastDeployTime = 0;
 void loop()
 {
@@ -377,7 +403,7 @@ void loop()
   //   altitude = integratedAltitude;
   //   altitudeV = integratedVelocity;
   // }
-  altitude = newAltitude580;
+  altitude = newAltitude580 - groundAlt;
   // altitudeV = altitudeV580;
 
   altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
@@ -488,6 +514,7 @@ void loop()
     // safety altitude is above 2 meters
 
     altitudeZero[zeroIndex] = 0;
+    baroAltitudeZero[zeroIndex] = altitude;
     velocityZero[zeroIndex] = 0;
 
     zeroIndex++; // increment to next in rolling array
@@ -498,7 +525,7 @@ void loop()
       altitudeZero[i] += velocityZero[i] * deltaT / 1000000.0;
     }
 
-    if (altitudeAccel > 30.0f || altitude > 10.0f) // make sure the altitude accel axis is correct
+    if (altitudeAccel > 30.0 || altitude > 50.0) // make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
@@ -507,7 +534,7 @@ void loop()
 
         integratedVelocity = velocityZero[zeroIndex];
         integratedAltitude = altitudeZero[zeroIndex];
-
+        groundAlt = baroAltitudeZero[zeroIndex];
         flightState++;
       }
     }
@@ -621,17 +648,37 @@ void loop()
     //advanced code vvv
     desiredDragCoef = inverseApogee(altitude,DESIRED_APOGEE,fusedVelo);
     if (desiredDragCoef > dragCoefficient){
-      airbrakeAngle += 4;
+      if (abs(CdError) > 0.0050){
+        airbrakeAngle += 5;
+      }
+      else if (abs(CdError) > 0.0030){
+        airbrakeAngle += 3;
+      }
+      else if (abs(CdError) > 0.0010){
+        airbrakeAngle += 2;
+      }
+      else {airbrakeAngle += 1;}
+
     }
     else{
-      airbrakeAngle -= 4;
-    }
+      if (abs(CdError) > 0.0050){
+        airbrakeAngle -= 5;
+      }
+      else if (abs(CdError) > 0.0030){
+        airbrakeAngle -= 3;
+      }
+      else if (abs(CdError) > 0.0010){
+        airbrakeAngle -= 2;
+      }
+      else {airbrakeAngle -= 1;}
+      }
+    
     airbrakeAngle = clampInt(10,180,airbrakeAngle);
     moveFlaps(airbrakeAngle);
 
     break;
 #pragma endregion
-  case 4: // we going down
+  case 4: // we going dow
 #pragma region
     fusedVelo = altitudeV580;
     closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
@@ -662,10 +709,22 @@ void loop()
     break;
 #pragma endregion
   case 5: // lawn
-    Serial.println("We Done ");
-    Serial.print("maxAlt: ");
-    Serial.print(maxAltitude);
-    Serial.println();
+    delay(10);
+    digitalWrite(2, HIGH);
+    delay(10);
+    digitalWrite(2, LOW);
+
+    // Serial.println("We Done ");
+    // Serial.print("maxAlt: ");
+    // Serial.print(maxAltitude);
+    // Serial.println();
+    if (Serial.available() > 0){
+      while (Serial.available()) Serial.read();
+
+        Serial.println("Dump");
+        dumpLogs();
+      }
+
     break;
   } // end of switch cases
 }
