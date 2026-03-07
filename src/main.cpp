@@ -203,7 +203,7 @@ void writeDataHeader()
       "desired Cd,"
       "Cd error,"
 
-      "noAirbrake PredApogee,"
+      "PredApogee,"
       "airbrake PredApogee,"
 
       "Chute Deployed,"
@@ -245,8 +245,8 @@ void dataLogging()
       String(desiredDragCoef, DATAPRECISION) + ',' +
       String(CdError, DATAPRECISION) + ',' +
 
-      String(predictApogee(altitude, integratedVelocity, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
-      String(predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
+      String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
+      String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
 
       (String)(parachuteDeployed * 100) + ',' +
       (String)(dragFlapDeployed * 100) + ',' +
@@ -312,24 +312,6 @@ void setup()
   delay(1000);
   pinMode(2, OUTPUT); // blue LED
   digitalWrite(2, HIGH);
-  delay(1000);
-  Serial.println("open");
-  openOpenFlap();
-  delay(1000);
-  Serial.println("close");
-  closeCloseFlap();
-  delay(1000);
-  Serial.println("open");
-  openOpenFlap();
-  delay(1000);
-  Serial.println("close");
-  closeCloseFlap();
-  delay(1000);
-  Serial.println("open");
-  openOpenFlap();
-  delay(1000);
-  Serial.println("close");
-  closeCloseFlap();
   delay(1000);
   delay(5000);
 }
@@ -516,7 +498,7 @@ void loop()
       altitudeZero[i] += velocityZero[i] * deltaT / 1000000.0;
     }
 
-    if (altitudeAccel > 30.0f || altitude > 5.0f) // make sure the altitude accel axis is correct
+    if (altitudeAccel > 30.0f || altitude > 10.0f) // make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
