@@ -399,7 +399,7 @@ void loop()
   // altitudeV = altitudeV580;
 
   altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-  dragCoefficient = abs((altitudeAccel + GRAVITY) / pow(fusedVelo, 2));
+  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0,INFINITY, pow(fusedVelo,2)));
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
@@ -624,9 +624,20 @@ void loop()
     // simple code vv
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
+    // if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) > 228.6)
+    // {
+    //   openOpenFlap();
+    //   lastDeployTime = millis();
+    // }
+    // else // im sure this will never be the case
+    // {
+    //   closeCloseFlap();
+    //   lastDeployTime = millis();
+
+    // }
 
     //advanced code vvv
-    desiredDragCoef = inverseApogee(altitude,DESIRED_APOGEE,integratedVelocity);
+    desiredDragCoef = inverseApogee(altitude,DESIRED_APOGEE,fusedVelo);
     if (desiredDragCoef > dragCoefficient){
       airbrakeAngle += 4;
     }
