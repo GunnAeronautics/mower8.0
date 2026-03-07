@@ -19,6 +19,15 @@ Y_SCALE = 0.991441
 Z_SCALE = 1.034657
 
 */
+X_OFFSET = -0.275670
+Y_OFFSET = 0.049140
+Z_OFFSET = 0.078841
+
+Scale factors:
+X_SCALE = 0.971166
+Y_SCALE = 0.970074
+Z_SCALE = 1.004359
+
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL343.h>

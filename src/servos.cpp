@@ -27,9 +27,11 @@ void undeployChute(){
     servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);
 }
 //0 to 1
-void moveFlaps(int power){
-    servo2.write((int)(power * (DRAG_FLAPS_DEPLOYED_ANGLE - DRAG_FLAPS_UNDEPLOYED_ANGLE) + DRAG_FLAPS_UNDEPLOYED_ANGLE));
-    servo3.write((int)(power * (DRAG_FLAPS_DEPLOYED_ANGLE - DRAG_FLAPS_UNDEPLOYED_ANGLE) + DRAG_FLAPS_UNDEPLOYED_ANGLE));
+void moveFlaps(int angle){
+    servo2.write(angle);
+    servo3.write(angle);
+    // servo2.write((int)(power * (DRAG_FLAPS_DEPLOYED_ANGLE - DRAG_FLAPS_UNDEPLOYED_ANGLE) + DRAG_FLAPS_UNDEPLOYED_ANGLE));
+    // servo3.write((int)(power * (DRAG_FLAPS_DEPLOYED_ANGLE - DRAG_FLAPS_UNDEPLOYED_ANGLE) + DRAG_FLAPS_UNDEPLOYED_ANGLE));
 
     // servo4.write(angleToBlink(power));  
 }

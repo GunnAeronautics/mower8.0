@@ -45,32 +45,27 @@ bool lastDragFlapDeployed = false;
 int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
-int flapDeploymentTrigger = 0; // counts # of times you should deploy flaps
-int numberOfNegatives = 0;
 int timesTheRocketIsStill = 0;
 double altitudeAccel = 0;
-float altitudeV = 0;
+// float altitudeV = 0;
 
 double dragCoefficient = 0;
 double desiredDragCoef = 0;
 double airbrakePower = 0;
 double integratedAltitude = 0;
 double integratedVelocity = 0;
+double fusedVelo = 0.0;
+float accelTrust = 1.0;
 // KalmanVelocityEstimator kalman(1, 3);
 // RollingAverage airBrakeDragCoef(100);
-float accelVelo = 0;
-float accelVeloADXL = 0;
-float predAlt = 0;
-float error;
+float CdError;
 unsigned long lastAirBrakeDeployTime = 0;
 unsigned long lastAirBrakeRetractTime = 0;
 float maxAltitude = 0;
 
-double noAirbrakeDragCoef = 0.0021665;
-double AirbrakeDragCoef = 0.0021665 * 2;
-
+float airbrakeAngle = 0;
 const float HYSTERESIS = 0.2f;
-bool microReady = false;
+bool microReady = false;//royan micro adjustmants
 int microReadyTime = 0;
 
 // everything related to timing
@@ -130,42 +125,18 @@ float coefOfDrag(float accel, float v)
   float coef = abs(accel / v / v);
   return coef;
 }
+
+int clampInt(int mini, int maxi, int val){//clamps value between min and max
+  return max(mini, min(maxi,val));
+} 
+float clampDouble(float mini, float maxi, float val){//clamps value between min and max
+  return max(mini, min(maxi,val));
+} 
+
 bool accelerometerTime = false;
-void dragCoefProcessing()
-{
-  dragCoefficient = coefOfDrag(altitudeAccel, integratedVelocity);
 
-  // //this code lowkey doing nothing VVV
-  // //airbrake deployed for first time
-  // if (lastDragFlapDeployed == false && dragFlapDeployed == true){
-  //   lastDragFlapDeployed = true;
-  //   lastAirBrakeDeployTime = millis();
-
-  //   accelerometerTime = true;
-  //   integratedAltitude = altitude;
-  //   integratedVelocity = altitudeV;
-  // }
-  // //airbrake retracted for first time
-  // if (lastDragFlapDeployed == true && dragFlapDeployed == false){
-  //   lastDragFlapDeployed = false;
-  //   lastAirBrakeRetractTime = millis();
-
-  // }
-  // if (dragFlapDeployed == false &&
-  //     lastAirBrakeRetractTime < millis() - DRAG_FLAP_MOVE_TIME)//switch back to main altitude
-  // { //sufficient time has passed so we can start taking measurements for the rolling avwerage
-  //   accelerometerTime = false;
-  // }
-
-  // if (dragFlapDeployed &&
-  //     lastAirBrakeDeployTime < millis() - DRAG_FLAP_MOVE_TIME)
-  // { //sufficient time has passed so we can start taking measurements for the rolling avwerage
-
-  //   // airBrakeDragCoef.newData(dragCoefficient);
-  // }
-}
 float inverseApogee(double alt, double desiredApogee, double v) { // Working & Tested
-  float searchRangeH = 1;
+  float searchRangeH = 0.1;
   float searchRangeL = 0;//SEARCH RANGE IS 0<m<1
   float mid;
   for (int i = 0; i < 20; i++) {
@@ -178,7 +149,7 @@ float inverseApogee(double alt, double desiredApogee, double v) { // Working & T
       searchRangeL = mid;
     }
   }
-  return mid;
+  return mid;//returns drag coef that work
 }
 
 //returns percentage from 0 to 1
@@ -192,7 +163,6 @@ void openOpenFlap()
   // openOpenSD();
   openFlaps();
 }
-
 void closeCloseFlap()
 {
   dragFlapDeployed = false;
@@ -216,11 +186,12 @@ void writeDataHeader()
       "timeElapsed,"
       "Pressure,"
       "Temp,"
+
       "Alt,"
       "integratedAlt,"
       "baroAlt580,"
 
-      "velocity,"
+      "fusedVelocity,"
       "integratedVelo,"
       "baroVelo,"
 
@@ -228,17 +199,16 @@ void writeDataHeader()
       "bnoGlobalAccel,"
       "yAxisAccel,"
 
-      "drag coef,"
-      "desired drag coef,"
+      "Cd,"
+      "desired Cd,"
+      "Cd error,"
 
       "noAirbrake PredApogee,"
       "airbrake PredApogee,"
 
       "Chute Deployed,"
       "dragFlaps deployed,"
-      "airbrakePower,"
-
-      "accelerometer time,"
+      "airbrakeAngle,"
 
       "flight state,"
       "zenith,"
@@ -263,7 +233,7 @@ void dataLogging()
       String(integratedAltitude) + ',' +      // alt
       String(altitude580) + ',' +             // alt
 
-      String(altitudeV, DATAPRECISION) + ',' +          // velocity - baro derived
+      String(fusedVelo, DATAPRECISION) + ',' +          // velocity - baro derived
       String(integratedVelocity, DATAPRECISION) + ',' + // alt
       String(altitudeV580, DATAPRECISION) + ',' +       // velocity - baro derived
 
@@ -273,15 +243,15 @@ void dataLogging()
 
       String(dragCoefficient, DATAPRECISION) + ',' +
       String(desiredDragCoef, DATAPRECISION) + ',' +
+      String(CdError, DATAPRECISION) + ',' +
 
       String(predictApogee(altitude, integratedVelocity, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
       String(predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
 
       (String)(parachuteDeployed * 100) + ',' +
       (String)(dragFlapDeployed * 100) + ',' +
-      (String)(airbrakePower * 100) + ',' +
+      (String)(airbrakeAngle * 100) + ',' +
 
-      (String)(accelerometerTime * 100) + ',' +
       (String)(flightState * 100) + ',' +
 
       String(zenith, DATAPRECISION) + ',' + // localAxis
@@ -342,54 +312,31 @@ void setup()
   delay(1000);
   pinMode(2, OUTPUT); // blue LED
   digitalWrite(2, HIGH);
-  // delay(1000);
-  // openOpenFlap();
-  // delay(1000);
-  // closeCloseFlap();
-  // delay(5000);
+  delay(1000);
+  Serial.println("open");
+  openOpenFlap();
+  delay(1000);
+  Serial.println("close");
+  closeCloseFlap();
+  delay(1000);
+  Serial.println("open");
+  openOpenFlap();
+  delay(1000);
+  Serial.println("close");
+  closeCloseFlap();
+  delay(1000);
+  Serial.println("open");
+  openOpenFlap();
+  delay(1000);
+  Serial.println("close");
+  closeCloseFlap();
+  delay(1000);
+  delay(5000);
 }
 
 int paraDeployTime = 0;
 void downwardLogic()
 {
-  if (parachuteDeployed)
-  { // after parachute deploy micro optimization
-    if (microReady)
-    {                                                    // after 2 second delay
-      float tGround = timeToGround(altitude, altitudeV); // sec
-
-      float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
-      if (remainingMs < 50) // more clamps
-        remainingMs = 50;
-
-      float remainingSec = remainingMs / 1000.0f;
-
-      if (altitude <= 5)
-      { // if near ground
-        closeCloseFlap();
-        return;
-      }
-      if (remainingSec > tGround - HYSTERESIS)
-      {
-        openOpenFlap();
-      }
-      else if (remainingSec < tGround + HYSTERESIS)
-      {
-        closeCloseFlap();
-      }
-      return;
-    }
-    else
-    { // 2 second delay
-      if (microReadyTime + 2000 < timeElapsed)
-      {
-        microReady = true;
-      }
-      microReadyTime = timeElapsed;
-      return;
-    }
-  }
-
   // function of altitude and function of altitude for optimal parachute deployment intercept
   // the logic just works out :D
   if ((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY >
@@ -398,7 +345,6 @@ void downwardLogic()
     deployChute();
     parachuteDeployed = true;
   }
-
   // safety
   // if the rocket is under 15 meters in the air deploy asap
   if (altitude < 15.0)
@@ -406,12 +352,13 @@ void downwardLogic()
     deployChute();
     parachuteDeployed = true;
   }
+
   if (parachuteDeployed == false){
     paraDeployTime = millis();
   }
   if ((millis()-paraDeployTime) > 2000){
   if (parachuteDeployed) {//after parachute deploy micro optimization
-        float tGround = timeToGround(altitude, altitudeV); // sec
+        float tGround = timeToGround(altitude, fusedVelo); // sec
 
         float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
         if (remainingMs < 50) //more clamps
@@ -449,12 +396,11 @@ void loop()
   //   altitudeV = integratedVelocity;
   // }
   altitude = newAltitude580;
-  altitudeV = altitudeV580;
-  // integratedVelocity += (zGlobalAccel-9.81)*deltaT/1000000.0;
+  // altitudeV = altitudeV580;
 
   altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-  dragCoefficient = abs((altitudeAccel + GRAVITY) / pow(altitudeV, 2));
-
+  dragCoefficient = abs((altitudeAccel + GRAVITY) / pow(fusedVelo, 2));
+  CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
   integratedVelocity += altitudeAccel * deltaT / 1000000.0;
@@ -473,6 +419,7 @@ void loop()
   switch (flightState)
   {
   case 0: // happy data printing mode
+    fusedVelo = altitudeV580;
           // dataLogging();
 
 #pragma region
@@ -511,7 +458,7 @@ void loop()
     // Serial.print(", ");
 
     Serial.print("BMP580Velo: ");
-    Serial.print(altitudeV, DATAPRECISION);
+    Serial.print(fusedVelo, DATAPRECISION);
     Serial.print(",");
 
     Serial.print("accel: ");
@@ -548,7 +495,7 @@ void loop()
 
   case 1: // pad
 #pragma region
-
+    fusedVelo = altitudeV580;
     Serial.print("Waiting on Pad");
     Serial.print("Accel: ");
     Serial.print(altitudeAccel);
@@ -592,8 +539,8 @@ void loop()
 #pragma region
 
     dataLogging();
-
-    if (altitudeAccel < 0 || timeElapsed > 2000 || altitudeV < -1)
+    fusedVelo = integratedVelocity;
+    if (altitudeAccel < 0 || timeElapsed > 2000 || fusedVelo < -1)
     // warning accel being under 0 does not neccecarily mean that thrust has stopped but it is close enough
     // timeElasped > 2000 is just a safety to make sure it deploys for whatever reason
     // altitudeV < 0.5 is another cooked safety just in the rocket like hella tumbles
@@ -617,9 +564,14 @@ void loop()
 #pragma region
     dataLogging();
 
+    //shitty homebrew "filter"
+    fusedVelo = altitudeV580 * (1.0-accelTrust) + integratedVelocity * accelTrust;
+    accelTrust -= 0.002;// 1 divided by this amount = roughly how much time till fusedVelo is totally baro 
+    accelTrust = clampDouble(0,1,accelTrust);
+
     // velocity less than 0.5 means the rocket is going down
     // timeElasped over 10 sec is safety
-    if (altitudeV < 0.5 || timeElapsed > 10000)
+    if (fusedVelo < 0.5 || timeElapsed > 10000)
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10) // ok lets start the descent
@@ -652,7 +604,7 @@ void loop()
 
     // if perfect kinematic predictions say we are below the desired altitude
     // we retract the flaps (somewhat simple logic)
-    if (predictApogeeIdeal(altitude, altitudeV) < DESIRED_APOGEE)
+    if (predictApogeeIdeal(altitude, fusedVelo) < DESIRED_APOGEE)
     {
       closeCloseFlap();
       break;
@@ -669,18 +621,26 @@ void loop()
     // }
     // else if (timeElapsedSinceBurnout < 2000)
     //   {openOpenFlap();break;}
-
+    // simple code vv
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
+
+    //advanced code vvv
     desiredDragCoef = inverseApogee(altitude,DESIRED_APOGEE,integratedVelocity);
-    airbrakePower = dragCoefToAirbrake(desiredDragCoef);
-    moveFlaps(airbrakePower);
+    if (desiredDragCoef > dragCoefficient){
+      airbrakeAngle += 4;
+    }
+    else{
+      airbrakeAngle -= 4;
+    }
+    airbrakeAngle = clampInt(10,180,airbrakeAngle);
+    moveFlaps(airbrakeAngle);
 
     break;
 #pragma endregion
   case 4: // we going down
 #pragma region
-
+    fusedVelo = altitudeV580;
     closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
     openOpenSD();
     dataLogging();
@@ -690,7 +650,7 @@ void loop()
     // checks if the velocity is within 1 & -1 for an extended period of time
     // checks if the position is not near the apogee cause the first statement might trigger at apogee
     // 100 second safety
-    if (((-1 < altitudeV && altitudeV < 1) &&
+    if (((-1 < fusedVelo && fusedVelo < 1) &&
          (maxAltitude - 50 > altitude)) ||
         (timeElapsed > 100000))
     {
