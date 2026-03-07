@@ -222,7 +222,7 @@ String getDataHeader()
          "PredApogee,"
          "airbrake PredApogee,"
 
-         "Chute Deployed,"
+         "Chute Deployed,""
          "dragFlaps deployed,"
          "airbrakeAngle,"
 
@@ -644,7 +644,6 @@ void loop()
     }
 
     if (altitudeAccel > 30.0f || altitude > 10.0f) // make sure the altitude accel axis is correct
-    if (altitudeAccel > 30.0 || altitude > 1.0) // make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
