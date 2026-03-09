@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <math.h>
 // #include <SimpleKalmanFilter.h>
-// #include "SPIFFS.h"
+#include "SPIFFS.h"
 // Configuration and constants
 // #include "headers/config/config.h"
 
@@ -67,7 +67,7 @@ float airbrakeAngle = 0;
 const float HYSTERESIS = 0.2f;
 bool microReady = false;//royan micro adjustmants
 int microReadyTime = 0;
-
+File flashFile;
 // everything related to timing
 void timeStuff()
 {
@@ -179,23 +179,49 @@ float timeToGround(float altitude, float altitudeV)
     return INFINITY;
   return abs(altitude / -altitudeV);
 }
-// void openOpenSD(){
-//   file = SPIFFS.open("/log.csv", FILE_APPEND);
-// }
-// void closeSD(){
-//     file.close();
 
-// }
-// void logData(String data){
-//   file.println(data);
-// }
-// void dumpLogs(){
-//   file = SPIFFS.open("/log.csv");
-//   while(file.available()){
-//     Serial.write(file.read());
-//   }
-//   file.close();
-// }
+void clearFlashLog(){
+  flashFile  = SPIFFS.open("/log.csv",FILE_WRITE);
+  flashFile.close();
+}
+void writeEverything(){
+  if (!SPIFFS.begin(true)){
+    Serial.println("SPIFF FAILED");
+    return;
+  }
+  clearFlashLog();
+  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
+  flashFile.println("Hello");
+  flashFile.close();
+
+}
+void dumpLogs(){
+  if (!SPIFFS.begin(true)){
+    Serial.println("SPIFF FAILED");
+    return;
+  }
+  flashFile = SPIFFS.open("/log.csv");
+  while(flashFile.available()){
+    Serial.write(flashFile.read());
+  }
+  flashFile.close();
+  SPIFFS.end();
+}
+void addLine(String line){
+  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
+  flashFile.println("Hello");
+  flashFile.close();
+}
+void checkForDump(){
+if (Serial.available() > 0){
+  while (Serial.available()) Serial.read();
+
+  Serial.println("Dump");
+  dumpLogs();
+  }
+
+}
+
 void writeDataHeader()
 {
   String datalogHeader =
@@ -266,7 +292,7 @@ void dataLogging()
 
       (String)(parachuteDeployed * 100) + ',' +
       (String)(dragFlapDeployed * 100) + ',' +
-      (String)(airbrakeAngle * 100) + ',' +
+      (String)(airbrakeAngle) + ',' +
 
       (String)(flightState * 100) + ',' +
 
@@ -298,20 +324,15 @@ void setup()
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
   Wire.setClock(100000);
 
-  bnoSetup();
-  Serial.println("BNO Attached");
-  adxlSetup();
-  Serial.println("ADXL343 Attached");
+  // bnoSetup();
+  // Serial.println("BNO Attached");
+  // adxlSetup();
+  // Serial.println("ADXL343 Attached");
 
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
-  // if (!SPIFFS.begin(true)){
-  //   Serial.println("SPIFF FAILED");
-  //   return;
-  // }
-  // file  = SPIFFS.open("/log.csv",FILE_WRITE);
-  // file.close();
-  // sdSetup();
+
+  sdSetup();
   writeDataHeader();
   closeSD();
   openOpenSD();
@@ -501,6 +522,7 @@ void loop()
 
   case 1: // pad
 #pragma region
+    checkForDump();
     fusedVelo = altitudeV580;
     Serial.print("Waiting on Pad");
     Serial.print("Accel: ");
@@ -711,17 +733,12 @@ void loop()
     digitalWrite(2, HIGH);
     delay(10);
     digitalWrite(2, LOW);
+    checkForDump();
 
     // Serial.println("We Done ");
     // Serial.print("maxAlt: ");
     // Serial.print(maxAltitude);
     // Serial.println();
-    // if (Serial.available() > 0){
-    //   while (Serial.available()) Serial.read();
-
-    //     Serial.println("Dump");
-    //     dumpLogs();
-    //   }
 
     break;
   } // end of switch cases
