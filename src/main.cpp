@@ -5,16 +5,16 @@
 #include <Arduino.h>
 #include <math.h>
 // #include <SimpleKalmanFilter.h>
-#include "SPIFFS.h"
+// #include "SPIFFS.h"
 // Configuration and constants
-#include "headers/config/config.h"
+// #include "headers/config/config.h"
 
 // Homebrew libraries:
 // #include "headers/math/KalmanVelocityEstimator.h"
 #include "headers/sensors/adxl.h"
 #include "headers/sensors/bmpxxx.h"
 #include "headers/sensors/imu.h"
-// #include "headers/utils/sdcard.h"
+#include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -42,7 +42,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
+int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -62,7 +62,6 @@ float CdError;
 unsigned long lastAirBrakeDeployTime = 0;
 unsigned long lastAirBrakeRetractTime = 0;
 float maxAltitude = 0;
-File file;
 
 float airbrakeAngle = 0;
 const float HYSTERESIS = 0.2f;
@@ -180,24 +179,23 @@ float timeToGround(float altitude, float altitudeV)
     return INFINITY;
   return abs(altitude / -altitudeV);
 }
-void openOpenSD(){
-  file = SPIFFS.open("/log.csv", FILE_APPEND);
-}
-void closeSD(){
-    file.close();
+// void openOpenSD(){
+//   file = SPIFFS.open("/log.csv", FILE_APPEND);
+// }
+// void closeSD(){
+//     file.close();
 
-}
-void logData(String data){
-  file.println(data);
-
-}
-void dumpLogs(){
-  file = SPIFFS.open("/log.csv");
-  while(file.available()){
-    Serial.write(file.read());
-  }
-  file.close();
-}
+// }
+// void logData(String data){
+//   file.println(data);
+// }
+// void dumpLogs(){
+//   file = SPIFFS.open("/log.csv");
+//   while(file.available()){
+//     Serial.write(file.read());
+//   }
+//   file.close();
+// }
 void writeDataHeader()
 {
   String datalogHeader =
@@ -307,12 +305,12 @@ void setup()
 
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
-  if (!SPIFFS.begin(true)){
-    Serial.println("SPIFF FAILED");
-    return;
-  }
-  file  = SPIFFS.open("/log.csv",FILE_WRITE);
-  file.close();
+  // if (!SPIFFS.begin(true)){
+  //   Serial.println("SPIFF FAILED");
+  //   return;
+  // }
+  // file  = SPIFFS.open("/log.csv",FILE_WRITE);
+  // file.close();
   // sdSetup();
   writeDataHeader();
   closeSD();
@@ -514,7 +512,7 @@ void loop()
     // safety altitude is above 2 meters
 
     altitudeZero[zeroIndex] = 0;
-    baroAltitudeZero[zeroIndex] = altitude;
+    baroAltitudeZero[zeroIndex] = newAltitude580;
     velocityZero[zeroIndex] = 0;
 
     zeroIndex++; // increment to next in rolling array
@@ -718,12 +716,12 @@ void loop()
     // Serial.print("maxAlt: ");
     // Serial.print(maxAltitude);
     // Serial.println();
-    if (Serial.available() > 0){
-      while (Serial.available()) Serial.read();
+    // if (Serial.available() > 0){
+    //   while (Serial.available()) Serial.read();
 
-        Serial.println("Dump");
-        dumpLogs();
-      }
+    //     Serial.println("Dump");
+    //     dumpLogs();
+    //   }
 
     break;
   } // end of switch cases

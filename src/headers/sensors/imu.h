@@ -1,6 +1,6 @@
 #define IMU_H
-// #define BNO055
-#define BNO085
+#define BNO055
+// #define BNO085
 #include <Arduino.h>
 #include "../math/Quaternion.h"
 
