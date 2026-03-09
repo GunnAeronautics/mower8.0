@@ -191,50 +191,7 @@ float timeToGround(float altitude, float altitudeV)
     return INFINITY;
   return abs(altitude / -altitudeV);
 }
-
-void clearFlashLog(){
-  flashFile  = SPIFFS.open("/log.csv",FILE_WRITE);
-  flashFile.close();
-}
-void writeEverything(){
-  if (!SPIFFS.begin(true)){
-    Serial.println("SPIFF FAILED");
-    return;
-  }
-  clearFlashLog();
-  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-  flashFile.println("Hello");
-  flashFile.close();
-
-}
-void dumpLogs(){
-  if (!SPIFFS.begin(true)){
-    Serial.println("SPIFF FAILED");
-    return;
-  }
-  flashFile = SPIFFS.open("/log.csv");
-  while(flashFile.available()){
-    Serial.write(flashFile.read());
-  }
-  flashFile.close();
-  SPIFFS.end();
-}
-void addLine(String line){
-  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-  flashFile.println("Hello");
-  flashFile.close();
-}
-void checkForDump(){
-if (Serial.available() > 0){
-  while (Serial.available()) Serial.read();
-
-  Serial.println("Dump");
-  dumpLogs();
-  }
-
-}
-
-void writeDataHeader()
+String getDataHeader()
 {
   // String datalogHeader =
   return "timeElapsed,"
@@ -273,7 +230,6 @@ void writeDataHeader()
          "w,"
 
          "\n";
-  // logData(datalogHeader);
 }
 
 void dataLogging()
@@ -320,6 +276,65 @@ void dataLogging()
   logData(dataString);
 }
 
+
+void clearFlashLog(){
+  flashFile  = SPIFFS.open("/log.csv",FILE_WRITE);
+  flashFile.close();
+}
+void writeEverything(){
+  if (!SPIFFS.begin(true)){
+    Serial.println("SPIFF FAILED");
+    return;
+  }
+  clearFlashLog();
+  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
+      
+  flashFile.print(getDataHeader());
+
+      for (int r = 0; r < 10000; r++)
+      {
+        for (int c = 0; c < 27; c++)
+        {
+          flashFile.print(logArr[r][c], DATAPRECISION);
+
+          if (c < 27 - 1)
+          {
+            flashFile.print(",");
+          }
+        }
+
+        flashFile.print("\n");
+      }
+    
+  flashFile.close();
+  }
+void dumpLogs(){
+  if (!SPIFFS.begin(true)){
+    Serial.println("SPIFF FAILED");
+    return;
+  }
+  flashFile = SPIFFS.open("/log.csv");
+  while(flashFile.available()){
+    Serial.write(flashFile.read());
+  }
+  flashFile.close();
+  SPIFFS.end();
+}
+void addLine(String line){
+  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
+  flashFile.println("Hello");
+  flashFile.close();
+}
+void checkForDump(){
+if (Serial.available() > 0){
+  while (Serial.available()) Serial.read();
+
+  Serial.println("Dump");
+  dumpLogs();
+  }
+
+}
+
 double altitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 double baroAltitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -346,13 +361,7 @@ void setup()
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
 
-  sdSetup();
-  writeDataHeader();
-  closeSD();
-  openOpenSD();
-  writeDataHeader();
-  closeSD();
-  openOpenSD();
+
 
   servoSetup();
   lastT = micros();
@@ -765,28 +774,6 @@ void loop()
     digitalWrite(2, LOW);
     checkForDump();
 
-    if (!alreadyPushedData)
-    {
-      
-      file.print(getDataHeader());
-
-      for (int r = 0; r < 10000; r++)
-      {
-        for (int c = 0; c < 27; c++)
-        {
-          file.print(logArr[r][c], DATAPRECISION);
-
-          if (c < 27 - 1)
-          {
-            file.print(",");
-          }
-        }
-
-        file.print("\n");
-      }
-
-      alreadyPushedData = true;
-    }
     // Serial.println("We Done ");
     // Serial.print("maxAlt: ");
     // Serial.print(maxAltitude);
