@@ -26,7 +26,10 @@
 
 // Time variables
 
-float logArr[800][27];
+const int logArrayBufferSize = 600;
+const int logArrayDatasize = 27;
+float logArr[logArrayBufferSize][logArrayDatasize];
+const int maxLines = 10000;
 volatile unsigned long lastT;
 volatile unsigned static int deltaT;
 unsigned long startTimeStamp = 0;   // ms
@@ -142,9 +145,6 @@ float clampDouble(float mini, float maxi, float val)
 { // clamps value between min and max
   return max(mini, min(maxi, val));
 }
-
-bool accelerometerTime = false;
-
 float inverseApogee(double alt, double desiredApogee, double v)
 { // Working & Tested
   float searchRangeH = 0.1;
@@ -236,14 +236,58 @@ String getDataHeader()
 
          "\n";
 }
+void clearFlashLog()
+{
+  flashFile = SPIFFS.open("/log.csv", FILE_WRITE);
+  flashFile.close();
+}
+  String DataLine;
 
+void writeEverything()
+{
+  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
+  for (int r = 0; r < logArrayBufferSize; r++)
+  {
+    for (int c = 0; c < logArrayDatasize; c++)
+    {
+      DataLine += String(logArr[r][c], DATAPRECISION);
+      if (c < logArrayDatasize - 1)
+      {
+        DataLine += ",";
+      }
+    }
+    flashFile.println(DataLine);
+    DataLine = "";
+  }
 
+  flashFile.close();
+}
 
+void addLine(String line)
+{
+  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
+  flashFile.println(line);
+  flashFile.close();
+}
+
+bool slowLoggingTime = false;
 void dataLogging()
 {
   #pragma region
 
-  if (logArrIndex >= 10000-1) {
+  if ((logArrIndex >= logArrayBufferSize-1)&&(!slowLoggingTime)) {//looks like the thing is out of memory//switching
+    slowLoggingTime = true;
+    Serial.println("begin SPIFF");
+    if (!SPIFFS.begin(true))
+    {
+      Serial.println("SPIFF FAILED");
+      return;
+    }
+  
+    clearFlashLog();
+    addLine(getDataHeader());
+  }
+  if (slowLoggingTime){
       String dataString =
         String(timeElapsed) + ',' +                                  // rocket flight time
         String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
@@ -282,13 +326,11 @@ void dataLogging()
         String(bnoK, DATAPRECISION) + ',' + //
         String(bnoW, DATAPRECISION); //
 
-  if(!headerIn) {
-    flashFile.println(getDataHeader());
-  }
-
+    if (logArrIndex < maxLines){
     addLine(dataString);
-    
- #pragma endregion
+    logArrIndex++;
+    }
+    #pragma endregion
   } else {
     logArr[logArrIndex][0] = timeElapsed;
 
@@ -331,45 +373,6 @@ void dataLogging()
   }
 }
 
-void clearFlashLog()
-{
-  flashFile = SPIFFS.open("/log.csv", FILE_WRITE);
-  flashFile.close();
-}
-  String DataLine;
-
-void writeEverything()
-{
-  if (!SPIFFS.begin(true))
-  {
-    Serial.println("SPIFF FAILED");
-    return;
-  }
-  clearFlashLog();
-  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-
-  if(!headerIn) {
-    flashFile.println(getDataHeader());
-  }
-  
-  for (int r = 0; r < logArrIndex+1; r++)
-  {
-    for (int c = 0; c < 27; c++)
-    {
-      DataLine += String(logArr[r][c], DATAPRECISION);
-      if (c < 27 - 1)
-      {
-        DataLine += ",";
-      }
-    }
-
-    flashFile.println(DataLine);
-    DataLine = "";
-  }
-
-  flashFile.close();
-}
-
 void dumpLogs()
 {
   if (!SPIFFS.begin(true))
@@ -377,6 +380,7 @@ void dumpLogs()
     Serial.println("SPIFF FAILED");
     return;
   }
+
   flashFile = SPIFFS.open("/log.csv");
   while (flashFile.available())
   {
@@ -386,18 +390,13 @@ void dumpLogs()
   SPIFFS.end();
 }
 
-void addLine(String line)
-{
-  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-  flashFile.println(line);
-  flashFile.close();
-}
-
 void checkForDump()
 {
 
   if (Serial.available() > 0)
   {
+    delay(10000);
+
     while (Serial.available())
       Serial.read();
 
@@ -423,10 +422,10 @@ void setup()
 
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
   Wire.setClock(100000);
-  // bnoSetup();
-  // Serial.println("BNO Attached");
-  // adxlSetup();
-  // Serial.println("ADXL343 Attached");
+  bnoSetup();
+  Serial.println("BNO Attached");
+  adxlSetup();
+  Serial.println("ADXL343 Attached");
 
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
@@ -459,13 +458,15 @@ void downwardLogic()
   if ((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY >
       altitude)
   {
+
     deployChute();
     parachuteDeployed = true;
   }
   // safety
   // if the rocket is under 15 meters in the air deploy asap
-  if (altitude < 15.0)
+  if (altitude < 60.0)
   {
+
     deployChute();
     parachuteDeployed = true;
   }
@@ -478,6 +479,10 @@ void downwardLogic()
   {
     if (parachuteDeployed)
     {                                                    // after parachute deploy micro optimization
+      if (!alreadyPushedData){
+        alreadyPushedData = true;
+        writeEverything();
+      }
       float tGround = timeToGround(altitude, fusedVelo); // sec
 
       float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
@@ -540,15 +545,14 @@ void loop()
   switch (flightState)
   {
   case 0: // happy data printing mode
+    checkForDump();
     fusedVelo = altitudeV580;
     // dataLogging();
 
 #pragma region
-    // dataLogging();
-    //
     dataLogging();
-    // closeSD();
-    // openOpenSD();
+    //
+
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
@@ -828,23 +832,13 @@ void loop()
         flightState++;
         if (!alreadyPushedData){
           alreadyPushedData = true;
-          writeEverything();        
+          writeEverything();
         }
       }
     }
     else
     {
       timesTheRocketIsStill = 0;
-    }
-
-    if (!alreadyPushedData)
-    {
-      if (altitude)
-      alreadyPushedData = true;
-      writeEverything();
-    }
-    else{
-
     }
 
     break;
