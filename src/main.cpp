@@ -191,6 +191,7 @@ float timeToGround(float altitude, float altitudeV)
     return INFINITY;
   return abs(altitude / -altitudeV);
 }
+
 String getDataHeader()
 {
   // String datalogHeader =
@@ -232,107 +233,160 @@ String getDataHeader()
          "\n";
 }
 
+
+
 void dataLogging()
 {
-  String dataString =
-      String(timeElapsed) + ',' +                                  // rocket flight time
-      String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
-      String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +     // temp
+  #pragma region
+//   String dataString =
+//       String(timeElapsed) + ',' +                                  // rocket flight time
+//       String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
+//       String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +     // temp
 
-      String(altitude, DATAPRECISION) + ',' + // alt
-      String(integratedAltitude) + ',' +      // alt
-      String(altitude580) + ',' +             // alt
+//       String(altitude, DATAPRECISION) + ',' + // alt
+//       String(integratedAltitude) + ',' +      // alt
+//       String(altitude580) + ',' +             // alt
 
-      String(fusedVelo, DATAPRECISION) + ',' +          // velocity - baro derived
-      String(integratedVelocity, DATAPRECISION) + ',' + // alt
-      String(altitudeV580, DATAPRECISION) + ',' +       // velocity - baro derived
+//       String(fusedVelo, DATAPRECISION) + ',' +          // velocity - baro derived
+//       String(integratedVelocity, DATAPRECISION) + ',' + // alt
+//       String(altitudeV580, DATAPRECISION) + ',' +       // velocity - baro derived
 
-      String(altitudeAccel, DATAPRECISION) + ',' +          // global axis
-      String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' + // global axis
-      String(-yAccel - GRAVITY, DATAPRECISION) + ',' +      // localAxis
+//       String(altitudeAccel, DATAPRECISION) + ',' +          // global axis
+//       String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' + // global axis
+//       String(-yAccel - GRAVITY, DATAPRECISION) + ',' +      // localAxis
 
-      String(dragCoefficient, DATAPRECISION) + ',' +
-      String(desiredDragCoef, DATAPRECISION) + ',' +
-      String(CdError, DATAPRECISION) + ',' +
+//       String(dragCoefficient, DATAPRECISION) + ',' +
+//       String(desiredDragCoef, DATAPRECISION) + ',' +
+//       String(CdError, DATAPRECISION) + ',' +
 
-      String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
-      String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
+//       String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
+//       String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
 
-      (String)(parachuteDeployed * 100) + ',' +
-      (String)(dragFlapDeployed * 100) + ',' +
-      (String)(airbrakeAngle) + ',' +
+//       (String)(parachuteDeployed * 100) + ',' +
+//       (String)(dragFlapDeployed * 100) + ',' +
+//       (String)(airbrakeAngle) + ',' +
 
-      (String)(flightState * 100) + ',' +
+//       (String)(flightState * 100) + ',' +
 
-      String(zenith, DATAPRECISION) + ',' + // localAxis
-      String(GyroY, DATAPRECISION) + ',' +  //
+//       String(zenith, DATAPRECISION) + ',' + // localAxis
+//       String(GyroY, DATAPRECISION) + ',' +  //
 
-      String(bnoI, DATAPRECISION) + ',' + //
-      String(bnoJ, DATAPRECISION) + ',' + //
-      String(bnoK, DATAPRECISION) + ',' + //
-      String(bnoW, DATAPRECISION) + ',' + //
+//       String(bnoI, DATAPRECISION) + ',' + //
+//       String(bnoJ, DATAPRECISION) + ',' + //
+//       String(bnoK, DATAPRECISION) + ',' + //
+//       String(bnoW, DATAPRECISION) + ',' + //
+ #pragma endregion
 
-      "\n";
-  logData(dataString);
+  logArr[logArrIndex][0] = timeElapsed;
+
+  logArr[logArrIndex][1] = getBaroData_BMP580_pressure();
+  logArr[logArrIndex][2] = getBaroData_BMP580_temp();
+  logArr[logArrIndex][3] = altitude;
+  logArr[logArrIndex][4] = integratedAltitude;
+  logArr[logArrIndex][5] = altitude580;
+
+  logArr[logArrIndex][6] = fusedVelo;
+  logArr[logArrIndex][7] = integratedVelocity;
+  logArr[logArrIndex][8] = altitudeV580;
+
+  logArr[logArrIndex][9] = altitudeAccel;
+  logArr[logArrIndex][10] = zGlobalAccel - GRAVITY;
+  logArr[logArrIndex][11] = -yAccel - GRAVITY;
+
+  logArr[logArrIndex][12] = dragCoefficient;
+  logArr[logArrIndex][13] = desiredDragCoef;
+  logArr[logArrIndex][14] = CdError;
+
+  logArr[logArrIndex][15] = predictApogee(altitude, fusedVelo, dragCoefficient);
+  logArr[logArrIndex][16] = predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED);
+
+  logArr[logArrIndex][17] = parachuteDeployed * 100;
+  logArr[logArrIndex][18] = dragFlapDeployed * 100;
+  logArr[logArrIndex][19] = airbrakeAngle;
+
+  logArr[logArrIndex][20] = flightState * 100;
+
+  logArr[logArrIndex][21] = zenith; // localAxis
+  logArr[logArrIndex][22] = GyroY;  //gyaru! ~ Ado!!!
+
+  logArr[logArrIndex][23] = bnoI; // localAxis
+  logArr[logArrIndex][24] = bnoJ; // localAxis
+  logArr[logArrIndex][25] = bnoK; // localAxis
+  logArr[logArrIndex][26] = bnoW; // localAxis
+
+  logArrIndex++;
 }
 
-
-void clearFlashLog(){
-  flashFile  = SPIFFS.open("/log.csv",FILE_WRITE);
+void clearFlashLog()
+{
+  flashFile = SPIFFS.open("/log.csv", FILE_WRITE);
   flashFile.close();
 }
-void writeEverything(){
-  if (!SPIFFS.begin(true)){
+  String DataLine;
+
+void writeEverything()
+{
+  if (!SPIFFS.begin(true))
+  {
     Serial.println("SPIFF FAILED");
     return;
   }
   clearFlashLog();
   flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-      
-  flashFile.print(getDataHeader());
 
-      for (int r = 0; r < 10000; r++)
+  flashFile.println(getDataHeader());
+  for (int r = 0; r < logArrIndex+1; r++)
+  {
+    for (int c = 0; c < 27; c++)
+    {
+      DataLine += String(logArr[r][c], DATAPRECISION);
+      if (c < 27 - 1)
       {
-        for (int c = 0; c < 27; c++)
-        {
-          flashFile.print(logArr[r][c], DATAPRECISION);
-
-          if (c < 27 - 1)
-          {
-            flashFile.print(",");
-          }
-        }
-
-        flashFile.print("\n");
+        DataLine += ",";
       }
-    
-  flashFile.close();
+    }
+
+    flashFile.println(DataLine);
+    DataLine = "";
   }
-void dumpLogs(){
-  if (!SPIFFS.begin(true)){
+
+  flashFile.close();
+}
+
+void dumpLogs()
+{
+  if (!SPIFFS.begin(true))
+  {
     Serial.println("SPIFF FAILED");
     return;
   }
   flashFile = SPIFFS.open("/log.csv");
-  while(flashFile.available()){
+  while (flashFile.available())
+  {
     Serial.write(flashFile.read());
   }
   flashFile.close();
   SPIFFS.end();
 }
-void addLine(String line){
+
+void addLine(String line)
+{
   flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-  flashFile.println("Hello");
+  flashFile.println(line);
   flashFile.close();
 }
-void checkForDump(){
-if (Serial.available() > 0){
-  while (Serial.available()) Serial.read();
 
-  Serial.println("Dump");
-  dumpLogs();
+void checkForDump()
+{
+
+  if (Serial.available() > 0)
+  {
+    while (Serial.available())
+      Serial.read();
+
+    Serial.println("Dump");
+    dumpLogs();
   }
-
 }
 
 double altitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -360,8 +414,6 @@ void setup()
 
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
-
-
 
   servoSetup();
   lastT = micros();
@@ -763,6 +815,12 @@ void loop()
     else
     {
       timesTheRocketIsStill = 0;
+    }
+
+    if (altitude < 30 && !alreadyPushedData)
+    {
+      alreadyPushedData = true;
+      writeEverything();
     }
 
     break;
