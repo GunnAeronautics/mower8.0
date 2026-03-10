@@ -25,6 +25,8 @@
 //   - Parachute undeployed: 10°
 
 // Time variables
+
+float logArr[27][800];
 volatile unsigned long lastT;
 volatile unsigned static int deltaT;
 unsigned long startTimeStamp = 0;   // ms
@@ -51,7 +53,6 @@ int timesTheRocketIsStill = 0;
 double altitudeAccel = 0;
 // float altitudeV = 0;
 unsigned int logArrIndex = 0;
-float logArr[10000][27]; // log buffer
 
 double dragCoefficient = 0;
 double desiredDragCoef = 0;
@@ -422,7 +423,8 @@ void setup()
 
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
   Wire.setClock(100000);
-
+  Serial.println("freeHeap: " + ESP.getFreeHeap());
+  Serial.println("cpuFrequency" + ESP.getCpuFreqMHz());
   // bnoSetup();
   // Serial.println("BNO Attached");
   // adxlSetup();
@@ -639,7 +641,7 @@ void loop()
       altitudeZero[i] += velocityZero[i] * deltaT / 1000000.0;
     }
 
-    if (altitudeAccel > 30.0 || altitude > 50.0) // make sure the altitude accel axis is correct
+    if (altitudeAccel > 30.0 || altitude > 1.0) // make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
@@ -826,6 +828,10 @@ void loop()
       {
         // closeSD(); // close the sd card once and for all
         flightState++;
+        if (!alreadyPushedData){
+          alreadyPushedData = true;
+          writeEverything();        
+        }
       }
     }
     else
@@ -833,10 +839,14 @@ void loop()
       timesTheRocketIsStill = 0;
     }
 
-    if (altitude < 30 && !alreadyPushedData)
+    if (!alreadyPushedData)
     {
+      if (altitude)
       alreadyPushedData = true;
       writeEverything();
+    }
+    else{
+      slowWR
     }
 
     break;
