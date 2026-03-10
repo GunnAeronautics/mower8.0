@@ -73,6 +73,9 @@ const float HYSTERESIS = 0.2f;
 bool microReady = false; // royan micro adjustmants
 int microReadyTime = 0;
 File flashFile;
+
+bool headerIn = false;
+
 // everything related to timing
 void timeStuff()
 {
@@ -240,46 +243,92 @@ void dataLogging()
 {
   #pragma region
 
-  logArr[logArrIndex][0] = timeElapsed;
+  if (logArrIndex >= 10000-1) {
+      String dataString =
+        String(timeElapsed) + ',' +                                  // rocket flight time
+        String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
+        String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +     // temp
 
-  logArr[logArrIndex][1] = getBaroData_BMP580_pressure();
-  logArr[logArrIndex][2] = getBaroData_BMP580_temp();
-  logArr[logArrIndex][3] = altitude;
-  logArr[logArrIndex][4] = integratedAltitude;
-  logArr[logArrIndex][5] = altitude580;
+        String(altitude, DATAPRECISION) + ',' + // alt
+        String(integratedAltitude) + ',' +      // alt
+        String(altitude580) + ',' +             // alt
 
-  logArr[logArrIndex][6] = fusedVelo;
-  logArr[logArrIndex][7] = integratedVelocity;
-  logArr[logArrIndex][8] = altitudeV580;
+        String(fusedVelo, DATAPRECISION) + ',' +          // velocity - baro derived
+        String(integratedVelocity, DATAPRECISION) + ',' + // alt
+        String(altitudeV580, DATAPRECISION) + ',' +       // velocity - baro derived
 
-  logArr[logArrIndex][9] = altitudeAccel;
-  logArr[logArrIndex][10] = zGlobalAccel - GRAVITY;
-  logArr[logArrIndex][11] = -yAccel - GRAVITY;
+        String(altitudeAccel, DATAPRECISION) + ',' +          // global axis
+        String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' + // global axis
+        String(-yAccel - GRAVITY, DATAPRECISION) + ',' +      // localAxis
 
-  logArr[logArrIndex][12] = dragCoefficient;
-  logArr[logArrIndex][13] = desiredDragCoef;
-  logArr[logArrIndex][14] = CdError;
+        String(dragCoefficient, DATAPRECISION) + ',' +
+        String(desiredDragCoef, DATAPRECISION) + ',' +
+        String(CdError, DATAPRECISION) + ',' +
 
-  logArr[logArrIndex][15] = predictApogee(altitude, fusedVelo, dragCoefficient);
-  logArr[logArrIndex][16] = predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED);
+        String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
+        String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
 
-  logArr[logArrIndex][17] = parachuteDeployed * 100;
-  logArr[logArrIndex][18] = dragFlapDeployed * 100;
-  logArr[logArrIndex][19] = airbrakeAngle;
+        (String)(parachuteDeployed * 100) + ',' +
+        (String)(dragFlapDeployed * 100) + ',' +
+        (String)(airbrakeAngle) + ',' +
 
-  logArr[logArrIndex][20] = flightState * 100;
+        (String)(flightState * 100) + ',' +
 
-  logArr[logArrIndex][21] = zenith; // localAxis
-  logArr[logArrIndex][22] = GyroY;  //gyaru! ~ Ado!!!
+        String(zenith, DATAPRECISION) + ',' + // localAxis
+        String(GyroY, DATAPRECISION) + ',' +  //
 
-  logArr[logArrIndex][23] = bnoI; // localAxis
-  logArr[logArrIndex][24] = bnoJ; // localAxis
-  logArr[logArrIndex][25] = bnoK; // localAxis
-  logArr[logArrIndex][26] = bnoW; // localAxis
+        String(bnoI, DATAPRECISION) + ',' + //
+        String(bnoJ, DATAPRECISION) + ',' + //
+        String(bnoK, DATAPRECISION) + ',' + //
+        String(bnoW, DATAPRECISION); //
 
-  logArrIndex++;
-  #pragma endregion
+  if(!headerIn) {
+    flashFile.println(getDataHeader());
+  }
 
+    addLine(dataString);
+    
+ #pragma endregion
+  } else {
+    logArr[logArrIndex][0] = timeElapsed;
+
+    logArr[logArrIndex][1] = getBaroData_BMP580_pressure();
+    logArr[logArrIndex][2] = getBaroData_BMP580_temp();
+    logArr[logArrIndex][3] = altitude;
+    logArr[logArrIndex][4] = integratedAltitude;
+    logArr[logArrIndex][5] = altitude580;
+
+    logArr[logArrIndex][6] = fusedVelo;
+    logArr[logArrIndex][7] = integratedVelocity;
+    logArr[logArrIndex][8] = altitudeV580;
+
+    logArr[logArrIndex][9] = altitudeAccel;
+    logArr[logArrIndex][10] = zGlobalAccel - GRAVITY;
+    logArr[logArrIndex][11] = -yAccel - GRAVITY;
+
+    logArr[logArrIndex][12] = dragCoefficient;
+    logArr[logArrIndex][13] = desiredDragCoef;
+    logArr[logArrIndex][14] = CdError;
+
+    logArr[logArrIndex][15] = predictApogee(altitude, fusedVelo, dragCoefficient);
+    logArr[logArrIndex][16] = predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED);
+
+    logArr[logArrIndex][17] = parachuteDeployed * 100;
+    logArr[logArrIndex][18] = dragFlapDeployed * 100;
+    logArr[logArrIndex][19] = airbrakeAngle;
+
+    logArr[logArrIndex][20] = flightState * 100;
+
+    logArr[logArrIndex][21] = zenith; // localAxis
+    logArr[logArrIndex][22] = GyroY;  //gyaru! ~ Ado!!!
+
+    logArr[logArrIndex][23] = bnoI; // localAxis
+    logArr[logArrIndex][24] = bnoJ; // localAxis
+    logArr[logArrIndex][25] = bnoK; // localAxis
+    logArr[logArrIndex][26] = bnoW; // localAxis
+
+    logArrIndex++;
+  }
 }
 
 void clearFlashLog()
@@ -299,7 +348,10 @@ void writeEverything()
   clearFlashLog();
   flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
 
-  flashFile.println(getDataHeader());
+  if(!headerIn) {
+    flashFile.println(getDataHeader());
+  }
+  
   for (int r = 0; r < logArrIndex+1; r++)
   {
     for (int c = 0; c < 27; c++)
