@@ -25,6 +25,8 @@
 //   - Parachute undeployed: 10°
 
 // Time variables
+
+float logArr[27][800];
 volatile unsigned long lastT;
 volatile unsigned static int deltaT;
 unsigned long startTimeStamp = 0;   // ms
@@ -51,7 +53,6 @@ int timesTheRocketIsStill = 0;
 double altitudeAccel = 0;
 // float altitudeV = 0;
 unsigned int logArrIndex = 0;
-float logArr[10000][27]; // log buffer
 
 double dragCoefficient = 0;
 double desiredDragCoef = 0;
@@ -238,44 +239,6 @@ String getDataHeader()
 void dataLogging()
 {
   #pragma region
-//   String dataString =
-//       String(timeElapsed) + ',' +                                  // rocket flight time
-//       String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
-//       String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +     // temp
-
-//       String(altitude, DATAPRECISION) + ',' + // alt
-//       String(integratedAltitude) + ',' +      // alt
-//       String(altitude580) + ',' +             // alt
-
-//       String(fusedVelo, DATAPRECISION) + ',' +          // velocity - baro derived
-//       String(integratedVelocity, DATAPRECISION) + ',' + // alt
-//       String(altitudeV580, DATAPRECISION) + ',' +       // velocity - baro derived
-
-//       String(altitudeAccel, DATAPRECISION) + ',' +          // global axis
-//       String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' + // global axis
-//       String(-yAccel - GRAVITY, DATAPRECISION) + ',' +      // localAxis
-
-//       String(dragCoefficient, DATAPRECISION) + ',' +
-//       String(desiredDragCoef, DATAPRECISION) + ',' +
-//       String(CdError, DATAPRECISION) + ',' +
-
-//       String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
-//       String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
-
-//       (String)(parachuteDeployed * 100) + ',' +
-//       (String)(dragFlapDeployed * 100) + ',' +
-//       (String)(airbrakeAngle) + ',' +
-
-//       (String)(flightState * 100) + ',' +
-
-//       String(zenith, DATAPRECISION) + ',' + // localAxis
-//       String(GyroY, DATAPRECISION) + ',' +  //
-
-//       String(bnoI, DATAPRECISION) + ',' + //
-//       String(bnoJ, DATAPRECISION) + ',' + //
-//       String(bnoK, DATAPRECISION) + ',' + //
-//       String(bnoW, DATAPRECISION) + ',' + //
- #pragma endregion
 
   logArr[logArrIndex][0] = timeElapsed;
 
@@ -315,6 +278,8 @@ void dataLogging()
   logArr[logArrIndex][26] = bnoW; // localAxis
 
   logArrIndex++;
+  #pragma endregion
+
 }
 
 void clearFlashLog()
@@ -406,7 +371,8 @@ void setup()
 
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
   Wire.setClock(100000);
-
+  Serial.println("freeHeap: " + ESP.getFreeHeap());
+  Serial.println("cpuFrequency" + ESP.getCpuFreqMHz());
   // bnoSetup();
   // Serial.println("BNO Attached");
   // adxlSetup();
@@ -623,7 +589,7 @@ void loop()
       altitudeZero[i] += velocityZero[i] * deltaT / 1000000.0;
     }
 
-    if (altitudeAccel > 30.0 || altitude > 50.0) // make sure the altitude accel axis is correct
+    if (altitudeAccel > 30.0 || altitude > 1.0) // make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 3)
@@ -810,6 +776,10 @@ void loop()
       {
         // closeSD(); // close the sd card once and for all
         flightState++;
+        if (!alreadyPushedData){
+          alreadyPushedData = true;
+          writeEverything();        
+        }
       }
     }
     else
@@ -817,10 +787,14 @@ void loop()
       timesTheRocketIsStill = 0;
     }
 
-    if (altitude < 30 && !alreadyPushedData)
+    if (!alreadyPushedData)
     {
+      if (altitude)
       alreadyPushedData = true;
       writeEverything();
+    }
+    else{
+      slowWR
     }
 
     break;
