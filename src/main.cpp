@@ -26,7 +26,7 @@
 
 // Time variables
 
-float logArr[27][800];
+float logArr[800][27];
 volatile unsigned long lastT;
 volatile unsigned static int deltaT;
 unsigned long startTimeStamp = 0;   // ms
@@ -371,8 +371,6 @@ void setup()
 
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
   Wire.setClock(100000);
-  Serial.println("freeHeap: " + ESP.getFreeHeap());
-  Serial.println("cpuFrequency" + ESP.getCpuFreqMHz());
   // bnoSetup();
   // Serial.println("BNO Attached");
   // adxlSetup();
@@ -794,7 +792,7 @@ void loop()
       writeEverything();
     }
     else{
-      slowWR
+
     }
 
     break;
