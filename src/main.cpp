@@ -14,7 +14,7 @@
 #include "headers/sensors/adxl.h"
 #include "headers/sensors/bmpxxx.h"
 #include "headers/sensors/imu.h"
-#include "headers/utils/sdcard.h"
+//#include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -48,6 +48,8 @@ int flightStateAdvancementTrigger = 0; // counts number of times state switching
 int timesTheRocketIsStill = 0;
 double altitudeAccel = 0;
 // float altitudeV = 0;
+unsigned int logArrIndex = 0;
+float logArr[10000][30]; // log buffer
 
 double dragCoefficient = 0;
 double desiredDragCoef = 0;
@@ -196,6 +198,19 @@ float timeToGround(float altitude, float altitudeV)
 //   }
 //   file.close();
 // }
+
+void logData(String dataString) {
+  if (logArrIndex >= MAX_STRING_SIZE) {
+    return;
+  }
+  for (int i = 0; i < dataString.length(); i++) {
+    logArr[logArrIndex][i] = dataString[i];
+    logArrIndex++;
+
+  }
+}
+
+
 void writeDataHeader()
 {
   String datalogHeader =
@@ -292,6 +307,8 @@ void setup()
   Serial.begin(115200);
   Serial.println("Serial Begin");
 
+  Serial.println("Allocing Buffers");
+
   baroSetup();
   Serial.println("Barometric Sensor Setup Complete");
 
@@ -312,12 +329,12 @@ void setup()
   // file  = SPIFFS.open("/log.csv",FILE_WRITE);
   // file.close();
   // sdSetup();
-  writeDataHeader();
-  closeSD();
-  openOpenSD();
-  writeDataHeader();
-  closeSD();
-  openOpenSD();
+  // writeDataHeader();
+  // closeSD();
+  // openOpenSD();
+  // writeDataHeader();
+  // closeSD();
+  // openOpenSD();
 
   servoSetup();
   lastT = micros();
@@ -585,8 +602,8 @@ void loop()
       {
         flightState++;
         flightStateAdvancementTrigger = 0;
-        closeSD(); // writes to sd card cuz the hard times are over
-        openOpenSD();
+        // closeSD(); // writes to sd card cuz the hard times are over
+        // openOpenSD();
 
         closeCloseFlap(); // stows the airbrakes
         // detach();
@@ -679,8 +696,8 @@ void loop()
   case 4: // we going dow
 #pragma region
     fusedVelo = altitudeV580;
-    closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
-    openOpenSD();
+    // closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
+    // openOpenSD();
     dataLogging();
 
     downwardLogic();
@@ -695,7 +712,7 @@ void loop()
       timesTheRocketIsStill++;
       if (timesTheRocketIsStill > 30)
       {
-        closeSD(); // close the sd card once and for all
+        // closeSD(); // close the sd card once and for all
         flightState++;
       }
     }
