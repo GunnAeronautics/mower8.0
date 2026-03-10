@@ -14,7 +14,7 @@
 #include "headers/sensors/adxl.h"
 #include "headers/sensors/bmpxxx.h"
 #include "headers/sensors/imu.h"
-//#include "headers/utils/sdcard.h"
+// #include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -40,6 +40,8 @@ volatile float altitude = 0;
 bool dragFlapDeployed = false;
 bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
+
+bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
 int flightState = 0;                   // state of the rocket's control
@@ -49,7 +51,7 @@ int timesTheRocketIsStill = 0;
 double altitudeAccel = 0;
 // float altitudeV = 0;
 unsigned int logArrIndex = 0;
-float logArr[10000][30]; // log buffer
+float logArr[10000][27]; // log buffer
 
 double dragCoefficient = 0;
 double desiredDragCoef = 0;
@@ -67,7 +69,7 @@ float maxAltitude = 0;
 
 float airbrakeAngle = 0;
 const float HYSTERESIS = 0.2f;
-bool microReady = false;//royan micro adjustmants
+bool microReady = false; // royan micro adjustmants
 int microReadyTime = 0;
 
 // everything related to timing
@@ -128,35 +130,43 @@ float coefOfDrag(float accel, float v)
   return coef;
 }
 
-int clampInt(int mini, int maxi, int val){//clamps value between min and max
-  return max(mini, min(maxi,val));
-} 
-float clampDouble(float mini, float maxi, float val){//clamps value between min and max
-  return max(mini, min(maxi,val));
-} 
+int clampInt(int mini, int maxi, int val)
+{ // clamps value between min and max
+  return max(mini, min(maxi, val));
+}
+float clampDouble(float mini, float maxi, float val)
+{ // clamps value between min and max
+  return max(mini, min(maxi, val));
+}
 
 bool accelerometerTime = false;
 
-float inverseApogee(double alt, double desiredApogee, double v) { // Working & Tested
+float inverseApogee(double alt, double desiredApogee, double v)
+{ // Working & Tested
   float searchRangeH = 0.1;
-  float searchRangeL = 0;//SEARCH RANGE IS 0<m<1
+  float searchRangeL = 0; // SEARCH RANGE IS 0<m<1
   float mid;
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 20; i++)
+  {
     mid = (searchRangeL + searchRangeH) / 2.0;
     float prediction = predictApogee(alt, v, mid);
 
-    if (prediction < desiredApogee) { // to the left of desired
+    if (prediction < desiredApogee)
+    { // to the left of desired
       searchRangeH = mid;
-    } else if (prediction > desiredApogee) {
+    }
+    else if (prediction > desiredApogee)
+    {
       searchRangeL = mid;
     }
   }
-  return mid;//returns drag coef that work
+  return mid; // returns drag coef that work
 }
 
-//returns percentage from 0 to 1
-float dragCoefToAirbrake(double dragCoef){
-  return ((dragCoef- COEF_DRAG_FLAPUNDEPLOYED)/(COEF_DRAG_FLAPDEPLOYED - COEF_DRAG_FLAPUNDEPLOYED));
+// returns percentage from 0 to 1
+float dragCoefToAirbrake(double dragCoef)
+{
+  return ((dragCoef - COEF_DRAG_FLAPUNDEPLOYED) / (COEF_DRAG_FLAPDEPLOYED - COEF_DRAG_FLAPUNDEPLOYED));
 }
 void openOpenFlap()
 {
@@ -199,58 +209,59 @@ float timeToGround(float altitude, float altitudeV)
 //   file.close();
 // }
 
-void logData(String dataString) {
-  if (logArrIndex >= MAX_STRING_SIZE) {
+void logData(String dataString)
+{
+  if (logArrIndex >= MAX_STRING_SIZE)
+  {
     return;
   }
-  for (int i = 0; i < dataString.length(); i++) {
+  for (int i = 0; i < dataString.length(); i++)
+  {
     logArr[logArrIndex][i] = dataString[i];
     logArrIndex++;
-
   }
 }
 
-
-void writeDataHeader()
+String getDataHeader()
 {
-  String datalogHeader =
-      "timeElapsed,"
-      "Pressure,"
-      "Temp,"
+  // String datalogHeader =
+  return "timeElapsed,"
+         "Pressure,"
+         "Temp,"
 
-      "Alt,"
-      "integratedAlt,"
-      "baroAlt580,"
+         "Alt,"
+         "integratedAlt,"
+         "baroAlt580,"
 
-      "fusedVelocity,"
-      "integratedVelo,"
-      "baroVelo,"
+         "fusedVelocity,"
+         "integratedVelo,"
+         "baroVelo,"
 
-      "altitudeAccel,"
-      "bnoGlobalAccel,"
-      "yAxisAccel,"
+         "altitudeAccel,"
+         "bnoGlobalAccel,"
+         "yAxisAccel,"
 
-      "Cd,"
-      "desired Cd,"
-      "Cd error,"
+         "Cd,"
+         "desired Cd,"
+         "Cd error,"
 
-      "PredApogee,"
-      "airbrake PredApogee,"
+         "PredApogee,"
+         "airbrake PredApogee,"
 
-      "Chute Deployed,"
-      "dragFlaps deployed,"
-      "airbrakeAngle,"
+         "Chute Deployed,"
+         "dragFlaps deployed,"
+         "airbrakeAngle,"
 
-      "flight state,"
-      "zenith,"
-      "roll rate,"
-      "i,"
-      "j,"
-      "k,"
-      "w,"
+         "flight state,"
+         "zenith,"
+         "roll rate,"
+         "i,"
+         "j,"
+         "k,"
+         "w,"
 
-      "\n";
-  logData(datalogHeader);
+         "\n";
+  // logData(datalogHeader);
 }
 
 void dataLogging()
@@ -375,35 +386,38 @@ void downwardLogic()
     parachuteDeployed = true;
   }
 
-  if (parachuteDeployed == false){
+  if (parachuteDeployed == false)
+  {
     paraDeployTime = millis();
   }
-  if ((millis()-paraDeployTime) > 2000){
-  if (parachuteDeployed) {//after parachute deploy micro optimization
-        float tGround = timeToGround(altitude, fusedVelo); // sec
+  if ((millis() - paraDeployTime) > 2000)
+  {
+    if (parachuteDeployed)
+    {                                                    // after parachute deploy micro optimization
+      float tGround = timeToGround(altitude, fusedVelo); // sec
 
-        float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
-        if (remainingMs < 50) //more clamps
-          remainingMs = 50;
+      float remainingMs = DESIRED_FLIGHT_TIME - timeElapsed;
+      if (remainingMs < 50) // more clamps
+        remainingMs = 50;
 
-        float remainingSec = remainingMs / 1000.0f;
+      float remainingSec = remainingMs / 1000.0f;
 
-        if (altitude <= 5){ // if near ground
-          closeCloseFlap();
-          return;
-        } 
-        if (remainingSec > tGround - HYSTERESIS)
-          {
-            openOpenFlap();
-          }
-        else if (remainingSec < tGround + HYSTERESIS)
-          {
-            closeCloseFlap();
-          }
-    }   
+      if (altitude <= 5)
+      { // if near ground
+        closeCloseFlap();
+        return;
+      }
+      if (remainingSec > tGround - HYSTERESIS)
+      {
+        openOpenFlap();
+      }
+      else if (remainingSec < tGround + HYSTERESIS)
+      {
+        closeCloseFlap();
+      }
+    }
   }
 }
-
 
 double groundAlt = 0;
 int lastDeployTime = 0;
@@ -422,7 +436,7 @@ void loop()
   // altitudeV = altitudeV580;
 
   altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0,INFINITY, pow(fusedVelo,2)));
+  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0, INFINITY, pow(fusedVelo, 2)));
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
@@ -443,10 +457,10 @@ void loop()
   {
   case 0: // happy data printing mode
     fusedVelo = altitudeV580;
-          // dataLogging();
+    // dataLogging();
 
 #pragma region
-          // dataLogging();
+    // dataLogging();
     //
     dataLogging();
     // closeSD();
@@ -588,10 +602,10 @@ void loop()
 #pragma region
     dataLogging();
 
-    //shitty homebrew "filter"
-    fusedVelo = altitudeV580 * (1.0-accelTrust) + integratedVelocity * accelTrust;
-    accelTrust -= 0.002;// 1 divided by this amount = roughly how much time till fusedVelo is totally baro 
-    accelTrust = clampDouble(0,1,accelTrust);
+    // shitty homebrew "filter"
+    fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
+    accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
+    accelTrust = clampDouble(0, 1, accelTrust);
 
     // velocity less than 0.5 means the rocket is going down
     // timeElasped over 10 sec is safety
@@ -660,35 +674,48 @@ void loop()
 
     // }
 
-    //advanced code vvv
-    desiredDragCoef = inverseApogee(altitude,DESIRED_APOGEE,fusedVelo);
-    if (desiredDragCoef > dragCoefficient){
-      if (abs(CdError) > 0.0050){
+    // advanced code vvv
+    desiredDragCoef = inverseApogee(altitude, DESIRED_APOGEE, fusedVelo);
+    if (desiredDragCoef > dragCoefficient)
+    {
+      if (abs(CdError) > 0.0050)
+      {
         airbrakeAngle += 5;
       }
-      else if (abs(CdError) > 0.0030){
+      else if (abs(CdError) > 0.0030)
+      {
         airbrakeAngle += 3;
       }
-      else if (abs(CdError) > 0.0010){
+      else if (abs(CdError) > 0.0010)
+      {
         airbrakeAngle += 2;
       }
-      else {airbrakeAngle += 1;}
-
+      else
+      {
+        airbrakeAngle += 1;
+      }
     }
-    else{
-      if (abs(CdError) > 0.0050){
+    else
+    {
+      if (abs(CdError) > 0.0050)
+      {
         airbrakeAngle -= 5;
       }
-      else if (abs(CdError) > 0.0030){
+      else if (abs(CdError) > 0.0030)
+      {
         airbrakeAngle -= 3;
       }
-      else if (abs(CdError) > 0.0010){
+      else if (abs(CdError) > 0.0010)
+      {
         airbrakeAngle -= 2;
       }
-      else {airbrakeAngle -= 1;}
+      else
+      {
+        airbrakeAngle -= 1;
       }
-    
-    airbrakeAngle = clampInt(10,180,airbrakeAngle);
+    }
+
+    airbrakeAngle = clampInt(10, 180, airbrakeAngle);
     moveFlaps(airbrakeAngle);
 
     break;
@@ -729,6 +756,28 @@ void loop()
     delay(10);
     digitalWrite(2, LOW);
 
+    if (!alreadyPushedData)
+    {
+      
+      file.print(getDataHeader());
+
+      for (int r = 0; r < 10000; r++)
+      {
+        for (int c = 0; c < 27; c++)
+        {
+          file.print(logArr[r][c], DATAPRECISION);
+
+          if (c < 27 - 1)
+          {
+            file.print(",");
+          }
+        }
+
+        file.print("\n");
+      }
+
+      alreadyPushedData = true;
+    }
     // Serial.println("We Done ");
     // Serial.print("maxAlt: ");
     // Serial.print(maxAltitude);
