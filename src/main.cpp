@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <math.h>
 // #include <SimpleKalmanFilter.h>
-#include "SPIFFS.h"
+// SPIFFS removed in favor of SD logging
 // Configuration and constants
 // #include "headers/config/config.h"
 
@@ -14,7 +14,7 @@
 #include "headers/sensors/adxl.h"
 #include "headers/sensors/bmpxxx.h"
 #include "headers/sensors/imu.h"
-// #include "headers/utils/sdcard.h"
+#include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -26,10 +26,6 @@
 
 // Time variables
 
-const int logArrayBufferSize = 600;
-const int logArrayDatasize = 27;
-float logArr[logArrayBufferSize][logArrayDatasize];
-const int maxLines = 10000;
 volatile unsigned long lastT;
 volatile unsigned static int deltaT;
 unsigned long startTimeStamp = 0;   // ms
@@ -55,7 +51,6 @@ int flightStateAdvancementTrigger = 0; // counts number of times state switching
 int timesTheRocketIsStill = 0;
 double altitudeAccel = 0;
 // float altitudeV = 0;
-unsigned int logArrIndex = 0;
 
 double dragCoefficient = 0;
 double desiredDragCoef = 0;
@@ -75,9 +70,6 @@ float airbrakeAngle = 0;
 const float HYSTERESIS = 0.2f;
 bool microReady = false; // royan micro adjustmants
 int microReadyTime = 0;
-File flashFile;
-
-bool headerIn = false;
 
 // everything related to timing
 void timeStuff()
@@ -222,7 +214,7 @@ String getDataHeader()
          "PredApogee,"
          "airbrake PredApogee,"
 
-         "Chute Deployed,""
+         "Chute Deployed,"
          "dragFlaps deployed,"
          "airbrakeAngle,"
 
@@ -236,173 +228,39 @@ String getDataHeader()
 
          "\n";
 }
-void clearFlashLog()
-{
-  flashFile = SPIFFS.open("/log.csv", FILE_WRITE);
-  flashFile.close();
-}
-  String DataLine;
 
-void writeEverything()
-{
-  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-  for (int r = 0; r < logArrayBufferSize; r++)
-  {
-    for (int c = 0; c < logArrayDatasize; c++)
-    {
-      DataLine += String(logArr[r][c], DATAPRECISION);
-      if (c < logArrayDatasize - 1)
-      {
-        DataLine += ",";
-      }
-    }
-    flashFile.println(DataLine);
-    DataLine = "";
-  }
-
-  flashFile.close();
-}
-
-void addLine(String line)
-{
-  flashFile = SPIFFS.open("/log.csv", FILE_APPEND);
-  flashFile.println(line);
-  flashFile.close();
-}
-
-bool slowLoggingTime = false;
 void dataLogging()
 {
-  #pragma region
+  String dataString =
+      String(timeElapsed) + ',' +
+      String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' +
+      String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +
+      String(altitude, DATAPRECISION) + ',' +
+      String(integratedAltitude, DATAPRECISION) + ',' +
+      String(altitude580, DATAPRECISION) + ',' +
+      String(fusedVelo, DATAPRECISION) + ',' +
+      String(integratedVelocity, DATAPRECISION) + ',' +
+      String(altitudeV580, DATAPRECISION) + ',' +
+      String(altitudeAccel, DATAPRECISION) + ',' +
+      String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' +
+      String(-yAccel - GRAVITY, DATAPRECISION) + ',' +
+      String(dragCoefficient, DATAPRECISION) + ',' +
+      String(desiredDragCoef, DATAPRECISION) + ',' +
+      String(CdError, DATAPRECISION) + ',' +
+      String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
+      String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
+      String(parachuteDeployed * 100) + ',' +
+      String(dragFlapDeployed * 100) + ',' +
+      String(airbrakeAngle, DATAPRECISION) + ',' +
+      String(flightState * 100) + ',' +
+      String(zenith, DATAPRECISION) + ',' +
+      String(GyroY, DATAPRECISION) + ',' +
+      String(bnoI, DATAPRECISION) + ',' +
+      String(bnoJ, DATAPRECISION) + ',' +
+      String(bnoK, DATAPRECISION) + ',' +
+      String(bnoW, DATAPRECISION) + '\n';
 
-  if ((logArrIndex >= logArrayBufferSize-1)&&(!slowLoggingTime)) {//looks like the thing is out of memory//switching
-    slowLoggingTime = true;
-    Serial.println("begin SPIFF");
-    if (!SPIFFS.begin(true))
-    {
-      Serial.println("SPIFF FAILED");
-      return;
-    }
-  
-    clearFlashLog();
-    addLine(getDataHeader());
-  }
-  if (slowLoggingTime){
-      String dataString =
-        String(timeElapsed) + ',' +                                  // rocket flight time
-        String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' + // pressure
-        String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +     // temp
-
-        String(altitude, DATAPRECISION) + ',' + // alt
-        String(integratedAltitude) + ',' +      // alt
-        String(altitude580) + ',' +             // alt
-
-        String(fusedVelo, DATAPRECISION) + ',' +          // velocity - baro derived
-        String(integratedVelocity, DATAPRECISION) + ',' + // alt
-        String(altitudeV580, DATAPRECISION) + ',' +       // velocity - baro derived
-
-        String(altitudeAccel, DATAPRECISION) + ',' +          // global axis
-        String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' + // global axis
-        String(-yAccel - GRAVITY, DATAPRECISION) + ',' +      // localAxis
-
-        String(dragCoefficient, DATAPRECISION) + ',' +
-        String(desiredDragCoef, DATAPRECISION) + ',' +
-        String(CdError, DATAPRECISION) + ',' +
-
-        String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +        // apogee prediction
-        String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' + // apogee prediction
-
-        (String)(parachuteDeployed * 100) + ',' +
-        (String)(dragFlapDeployed * 100) + ',' +
-        (String)(airbrakeAngle) + ',' +
-
-        (String)(flightState * 100) + ',' +
-
-        String(zenith, DATAPRECISION) + ',' + // localAxis
-        String(GyroY, DATAPRECISION) + ',' +  //
-
-        String(bnoI, DATAPRECISION) + ',' + //
-        String(bnoJ, DATAPRECISION) + ',' + //
-        String(bnoK, DATAPRECISION) + ',' + //
-        String(bnoW, DATAPRECISION); //
-
-    if (logArrIndex < maxLines){
-    addLine(dataString);
-    logArrIndex++;
-    }
-    #pragma endregion
-  } else {
-    logArr[logArrIndex][0] = timeElapsed;
-
-    logArr[logArrIndex][1] = getBaroData_BMP580_pressure();
-    logArr[logArrIndex][2] = getBaroData_BMP580_temp();
-    logArr[logArrIndex][3] = altitude;
-    logArr[logArrIndex][4] = integratedAltitude;
-    logArr[logArrIndex][5] = altitude580;
-
-    logArr[logArrIndex][6] = fusedVelo;
-    logArr[logArrIndex][7] = integratedVelocity;
-    logArr[logArrIndex][8] = altitudeV580;
-
-    logArr[logArrIndex][9] = altitudeAccel;
-    logArr[logArrIndex][10] = zGlobalAccel - GRAVITY;
-    logArr[logArrIndex][11] = -yAccel - GRAVITY;
-
-    logArr[logArrIndex][12] = dragCoefficient;
-    logArr[logArrIndex][13] = desiredDragCoef;
-    logArr[logArrIndex][14] = CdError;
-
-    logArr[logArrIndex][15] = predictApogee(altitude, fusedVelo, dragCoefficient);
-    logArr[logArrIndex][16] = predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED);
-
-    logArr[logArrIndex][17] = parachuteDeployed * 100;
-    logArr[logArrIndex][18] = dragFlapDeployed * 100;
-    logArr[logArrIndex][19] = airbrakeAngle;
-
-    logArr[logArrIndex][20] = flightState * 100;
-
-    logArr[logArrIndex][21] = zenith; // localAxis
-    logArr[logArrIndex][22] = GyroY;  //gyaru! ~ Ado!!!
-
-    logArr[logArrIndex][23] = bnoI; // localAxis
-    logArr[logArrIndex][24] = bnoJ; // localAxis
-    logArr[logArrIndex][25] = bnoK; // localAxis
-    logArr[logArrIndex][26] = bnoW; // localAxis
-
-    logArrIndex++;
-  }
-}
-
-void dumpLogs()
-{
-  if (!SPIFFS.begin(true))
-  {
-    Serial.println("SPIFF FAILED");
-    return;
-  }
-
-  flashFile = SPIFFS.open("/log.csv");
-  while (flashFile.available())
-  {
-    Serial.write(flashFile.read());
-  }
-  flashFile.close();
-  SPIFFS.end();
-}
-
-void checkForDump()
-{
-
-  if (Serial.available() > 0)
-  {
-    delay(10000);
-
-    while (Serial.available())
-      Serial.read();
-
-    Serial.println("Dump");
-    dumpLogs();
-  }
+  logData(dataString);
 }
 
 double altitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -415,8 +273,6 @@ void setup()
   Serial.begin(115200);
   Serial.println("Serial Begin");
 
-  Serial.println("Allocing Buffers");
-
   baroSetup();
   Serial.println("Barometric Sensor Setup Complete");
 
@@ -426,6 +282,9 @@ void setup()
   Serial.println("BNO Attached");
   adxlSetup();
   Serial.println("ADXL343 Attached");
+
+  sdSetup();
+  logData(getDataHeader());
 
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
@@ -481,7 +340,6 @@ void downwardLogic()
     {                                                    // after parachute deploy micro optimization
       if (!alreadyPushedData){
         alreadyPushedData = true;
-        writeEverything();
       }
       float tGround = timeToGround(altitude, fusedVelo); // sec
 
@@ -545,7 +403,6 @@ void loop()
   switch (flightState)
   {
   case 0: // happy data printing mode
-    checkForDump();
     fusedVelo = altitudeV580;
     // dataLogging();
 
@@ -620,7 +477,6 @@ void loop()
 
   case 1: // pad
 #pragma region
-    checkForDump();
     fusedVelo = altitudeV580;
     Serial.print("Waiting on Pad");
     Serial.print("Accel: ");
@@ -705,8 +561,8 @@ void loop()
       {
         flightState++;
         flightStateAdvancementTrigger = 0;
-        // closeSD(); // writes to sd card cuz the hard times are over
-        // openOpenSD();
+         closeSD(); // writes to sd card cuz the hard times are over
+         openOpenSD();
 
         closeCloseFlap(); // stows the airbrakes
         // detach();
@@ -828,11 +684,10 @@ void loop()
       timesTheRocketIsStill++;
       if (timesTheRocketIsStill > 30)
       {
-        // closeSD(); // close the sd card once and for all
+         closeSD(); // close the sd card once and for all
         flightState++;
         if (!alreadyPushedData){
           alreadyPushedData = true;
-          writeEverything();
         }
       }
     }
@@ -848,7 +703,6 @@ void loop()
     digitalWrite(2, HIGH);
     delay(10);
     digitalWrite(2, LOW);
-    checkForDump();
 
     // Serial.println("We Done ");
     // Serial.print("maxAlt: ");

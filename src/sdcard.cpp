@@ -42,6 +42,7 @@ void writeCSVLine(fs::FS &fs, const char *path, const char *message)
   }
   // file.close();
 }
+
 void openSD(fs::FS &fs){
   if (closed == true){
   file = fs.open(logFilename.c_str(), FILE_APPEND);
@@ -62,7 +63,7 @@ void openOpenSD(){
 // }
 void sdSetup()
 {
-  vspi.begin(SD_SCK,SD_MISO,SD_MOSI,SD_CS);
+  vspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
 
   if (!SD.begin(SD_CS, vspi))
   {
@@ -97,9 +98,10 @@ void sdSetup()
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
-  openSD(SD);
+
   logFilename = getNewLogFilename();
   Serial.println(logFilename);
+  openSD(SD);
 
   // openSD(SD);
   // writeCSVLine(SD, logFilename.c_str(), datalogHeader.c_str());
