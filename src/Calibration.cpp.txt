@@ -123,14 +123,14 @@ void setup() {
   Serial.println("\n=== CALIBRATION RESULTS ===");
 
   Serial.println("\nOffsets (m/s^2):");
-  Serial.print("X_OFFSET = "); Serial.println(offset.x, 6);
-  Serial.print("Y_OFFSET = "); Serial.println(offset.y, 6);
-  Serial.print("Z_OFFSET = "); Serial.println(offset.z, 6);
+  Serial.print("double X_OFFSET = "); Serial.println(offset.x, 6);
+  Serial.print("double Y_OFFSET = "); Serial.println(offset.y, 6);
+  Serial.print("double Z_OFFSET = "); Serial.println(offset.z, 6);
 
   Serial.println("\nScale factors:");
-  Serial.print("X_SCALE = "); Serial.println(scale.x, 6);
-  Serial.print("Y_SCALE = "); Serial.println(scale.y, 6);
-  Serial.print("Z_SCALE = "); Serial.println(scale.z, 6);
+  Serial.print("double X_SCALE = "); Serial.println(scale.x, 6);
+  Serial.print("double Y_SCALE = "); Serial.println(scale.y, 6);
+  Serial.print("double Z_SCALE = "); Serial.println(scale.z, 6);
 
   Serial.println("\nApply calibration as:");
   Serial.println("(raw - offset) * scale");
