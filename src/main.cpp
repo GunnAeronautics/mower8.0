@@ -643,6 +643,7 @@ void loop()
       altitudeZero[i] += velocityZero[i] * deltaT / 1000000.0;
     }
 
+    if (altitudeAccel > 30.0f || altitude > 10.0f) // make sure the altitude accel axis is correct
     if (altitudeAccel > 30.0 || altitude > 1.0) // make sure the altitude accel axis is correct
     {
       flightStateAdvancementTrigger++;
