@@ -1,42 +1,33 @@
-#include "headers/config/config.h"
+#ifdef TEST_MODE
+#include "test_mocks.h"
+#endif
 
-#ifndef Test_h
-#define Test_h
+#include "../src/headers/config/config.h"
+#include "../src/headers/sensors/bmpxxx.h"
 
+#ifndef TEST_H
+#define TEST_H
+
+// core flight state and timing variables
 extern int flightState;
-extern float DESIRED_APOGEE;
-extern float altitudeV;
-extern float altitude;
-
-extern int deltaT;
-extern int timeElapsed;
-extern int lastDeployTime;
-
+extern unsigned int deltaT;
+extern unsigned long timeElapsed;
+extern unsigned long lastDeployTime;
 extern int flightStateAdvancementTrigger;
 
-extern int integratedAltitude;
-extern int integratedVelocity;
-
+// altitude/velocity states
+extern float altitude;
+extern double altitudeV580;
+extern double integratedAltitude;
+extern double integratedVelocity;
 extern double altitudeAccel;
-extern double dragCoefficient;
 
-// extern Constants
-extern float COEF_DRAG_FLAPDEPLOYED;
-extern float GRAVITY;
-extern float DESIRED_APOGEE;
-extern int DESIRED_FLIGHT_TIME;
-
-
-// Boolean 
-extern bool parachuteDeployed; 
-extern bool microReady; // delay
-extern bool dragFlapDeployed;
+// actuation states
+extern bool parachuteDeployed;
 extern bool microReady;
+extern bool dragFlapDeployed;
 
-
-// extra variable
-extern float remainingSec;
-
+// helper routines under test
 extern void loop();
 extern double predictApogee(double alt, double v, double dragCoef);
 extern double predictApogeeIdeal(double alt, double v);

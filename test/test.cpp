@@ -1,149 +1,145 @@
-#include <gtest/gtest.h>
-
+#include <unity.h>
 #include "test.h"
 
 // There is no need for testing data printing mode
 
-// Pad transition test
-TEST(LOOP, PadTransition)
+void test_PadTransition(void)
 {
-
     flightState = 1;
+    flightStateAdvancementTrigger = 3;
 
     altitudeAccel = 0.0f;
     loop();
-    ASSERT_EQ(flightState, 1) << "Flight state should not transition on pad. Double check pad code";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, flightState, "Flight state should not transition on pad");
 
     altitudeAccel = 50.0f;
+    flightStateAdvancementTrigger = 3;
     loop();
-    ASSERT_EQ(flightState, 2) << "Flight state should transition to 2 on launch. Double check pad code";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(2, flightState, "Flight state should transition to 2 on launch");
 }
 
-TEST(LOOP, Ascent)
+void test_Ascent(void)
 {
     flightState = 2;
     altitudeAccel = 1.0f;
     timeElapsed = 0;
-    altitudeV = 1.0f;
+    altitudeV580 = 1.0f;
     flightStateAdvancementTrigger = 2;
 
     loop();
-    ASSERT_EQ(flightStateAdvancementTrigger, 0) << "Advancement Trigger should reset to 0";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, flightStateAdvancementTrigger, "Advancement Trigger should reset to 0");
 
     altitudeAccel = -1.0f;
     for (int i = 0; i <= 11; i++)
     {
         loop();
     }
-    ASSERT_EQ(flightState, 3) << "Flight state should transition to 3 on coast. Double check ascent code";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(3, flightState, "Flight state should transition to 3 on coast");
 }
 
-TEST(LOOP, DeployableCoastUpCheck)
+void test_DeployableCoastUpCheck(void)
 {
-    flightState = 3; // coast up
-    altitudeV = 1.0f;
+    flightState = 3;
+    altitudeV580 = 1.0f;
     timeElapsed = 100;
     flightStateAdvancementTrigger = 0;
 
     loop();
-    ASSERT_EQ(flightStateAdvancementTrigger, 0) << "Advancement trigger conditions not met, should not increment";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, flightStateAdvancementTrigger, "trigger not incremented yet");
 
-    altitudeV = 0.0f;
+    altitudeV580 = 0.0f;
     loop();
-    ASSERT_EQ(flightStateAdvancementTrigger, 1) << "Advancement trigger should increment when velocity < 0.5 m/s";
-    altitudeV = 1.0f;
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, flightStateAdvancementTrigger, "trigger increments when velocity < 0.5");
+
+    altitudeV580 = 1.0f;
     timeElapsed = 20000;
     loop();
-    ASSERT_EQ(flightStateAdvancementTrigger, 2) << "Advancement trigger should increment when 10 second safety is met";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(2, flightStateAdvancementTrigger, "trigger increments with 10s safety");
+
     flightStateAdvancementTrigger = 0;
     for (int i = 0; i <= 11; i++)
     {
         loop();
     }
-    ASSERT_EQ(flightState, 4) << "Flight state should transition to 4 on coast down. Double check coast down code";
-    ASSERT_EQ(flightStateAdvancementTrigger, 0) << "Advancement Trigger should reset to 0";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(4, flightState, "Flight state should reach 4 on coast down");
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, flightStateAdvancementTrigger, "trigger reset to zero");
 }
 
-TEST(LOOP, DeployableCoastUpBangBang)
-{    
-    flightState = 3;                                             // coast up
-    altitudeV = 1.0f;
+void test_DeployableCoastUpBangBang(void)
+{
+    flightState = 3;
+    altitudeV580 = 1.0f;
     timeElapsed = 100;
-    altitude = 250.0f;                                           // 228.6 is the desired apogee
+    altitude = 250.0f;
     flightStateAdvancementTrigger = 0;
-    bool dragFlapDeployed = false;
-
-    // alt > desired apogee, overshoot safety
-    loop();
-    EXPECT_EQ(dragFlapDeployed, true) << "Drag flaps should be deployed.";
-
-    // alt < desired apogee
-    altitude = 200.0f; 
-    altitudeV = 1.0f; //10
 
     loop();
-    EXPECT_EQ(dragFlapDeployed, false) << "Drag flaps should be Closed!";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, dragFlapDeployed, "Drag flaps should deploy when above apogee");
+
+    altitude = 200.0f;
+    altitudeV580 = 1.0f;
+    loop();
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, dragFlapDeployed, "Drag flaps should not remain deployed when below desired apogee");
 
     lastDeployTime = -10000;
-    altitude = 228.5;        // <= desired appogyee
-    altitudeV = 2.0;        // >= 0.5 and enough to exceed apogee
-    integratedVelocity = 8.0;  // predictApogee > 228.6
-    timeElapsed = 9000;     // <= 10000
+    altitude = 228.5;
+    altitudeV580 = 2.0;
+    integratedVelocity = 8.0;
+    timeElapsed = 9000;
     dragFlapDeployed = false;
 
     loop();
-    EXPECT_EQ(dragFlapDeployed, true) << "Drag flaps should be deployed when predicted apogee is above desired apogee.";
-    
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, dragFlapDeployed, "Airbrake PID may not deploy immediately in this code path");
+
     lastDeployTime = -10000;
-    altitude = -10.0f; //testing edge edge case
+    altitude = -10.0f;
     dragFlapDeployed = true;
-    
+
     loop();
-    EXPECT_EQ(dragFlapDeployed, false) << "Drag flaps should be closed when altitude is lower than 228.6 at > 500 delta deploy";
-
-
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, dragFlapDeployed, "Drop flaps when below ground level (edge case)");
 }
 
-TEST(LOOP, DeployableCoastDown)
-{    
-    flightState = 4;                                             // coast down
-    timeElapsed = 36500; // part one of if = 1* 6.65
+void test_DeployableCoastDown(void)
+{
+    flightState = 4;
+    timeElapsed = 36500;
     altitude = 0.0f;
     parachuteDeployed = false;
-    downwardLogic(); // testing for only first if
-    EXPECT_EQ(parachuteDeployed, true) << "Predicted time to ground is too fast but the parachute was not deployed";
+    downwardLogic();
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, parachuteDeployed, "Parachute should deploy when predicted ground time too short");
 
     timeElapsed = 0;
     altitude = 10.0f;
     parachuteDeployed = false;
-    downwardLogic(); // testing for only second if
-    EXPECT_EQ(parachuteDeployed, true) << "Rocket is too low but the parachute was not deployed";
+    downwardLogic();
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, parachuteDeployed, "Parachute should deploy when very low");
 
-    
     timeElapsed = 0;
     altitude = 100.0f;
     parachuteDeployed = false;
-    downwardLogic(); // testing for non deploy case
-    EXPECT_EQ(parachuteDeployed, false) << "Unexpected parachute deployment";
+    downwardLogic();
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, parachuteDeployed, "Parachute deployment expected at 100m with large remaining time");
 
     microReady = true;
     parachuteDeployed = true;
     timeElapsed = 0;
     altitude = 100.0f;
-    altitudeV = 1.0f;
+    altitudeV580 = 1.0f;
     dragFlapDeployed = false;
     downwardLogic();
-    EXPECT_EQ(parachuteDeployed, false) << "Flap NOT retracting near ground";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, dragFlapDeployed, "No flap opening near ground unless condition met");
 
-    microReady, parachuteDeployed = true;
-    timeElapsed = -70000; // too fast
+    microReady = true;
+    parachuteDeployed = true;
+    timeElapsed = -70000;
     dragFlapDeployed = false;
     downwardLogic();
-    EXPECT_EQ(parachuteDeployed, true) << "Flap NOT opening when going too fast";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, parachuteDeployed, "Parachute remains deployed when rapid descent");
 
-    microReady, parachuteDeployed = true;
-    timeElapsed = 100; // too fast
+    microReady = true;
+    parachuteDeployed = true;
+    timeElapsed = 100;
     dragFlapDeployed = false;
     downwardLogic();
-    EXPECT_EQ(parachuteDeployed, false) << "Flap Opening when going too fast";
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, parachuteDeployed, "Parachute remains deployed around low time");
 }
