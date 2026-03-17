@@ -76,6 +76,14 @@ const float HYSTERESIS = 0.2f;
 bool microReady = false; // royan micro adjustmants
 int microReadyTime = 0;
 
+bool ejectionChargeUntrust = false;
+int ejectionChargeUntrustCount = 0;
+int ejectionChargeRecoveryCount = 0;
+float ejectionChargePreDipMax = 0;
+float lastGoodAltitude = 0;
+float lastAltitude = 0;
+float secondLastAltitude = 0;
+
 #ifdef TEST_MODE
 // Provide hardware variants typically defined in other modules
 double altitude580 = 0.0;
@@ -300,8 +308,11 @@ void dataLogging()
 double altitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 double baroAltitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-double velocityZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+double velocityZero[40] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int zeroIndex = 0;
+
+
+
 void appSetup()
 {
 #ifdef TEST_MODE
@@ -421,7 +432,52 @@ void appLoop()
   //   altitudeV = integratedVelocity;
   // }
 #ifndef TEST_MODE
-  altitude = newAltitude580 - groundAlt;
+  float rawAltitude = newAltitude580 - groundAlt;
+
+  // detect ejection, >5 fall in one loop
+  if (!ejectionChargeUntrust && (lastAltitude - rawAltitude) > 5.0f) 
+  {
+    ejectionChargeUntrust = true;
+    ejectionChargeUntrustCount = 0;
+    ejectionChargeRecoveryCount = 0;
+    ejectionChargePreDipMax = max(lastAltitude, secondLastAltitude);
+    lastGoodAltitude = lastAltitude;
+  }
+
+  if (ejectionChargeUntrust)
+  {
+    ejectionChargeUntrustCount++;
+    float progress = min(1.0f, ejectionChargeUntrustCount / 40.0f);
+    // line estimator
+    altitude = lastGoodAltitude + (rawAltitude - lastGoodAltitude) * progress;
+
+    // check for recovery condition value climbed back up not befor dip max
+    if (rawAltitude > ejectionChargePreDipMax - 0.1f && rawAltitude <= ejectionChargePreDipMax + 0.1f)
+    {
+      ejectionChargeRecoveryCount++;
+    }
+    else
+    {
+      ejectionChargeRecoveryCount = 0;
+    }
+
+    if (ejectionChargeRecoveryCount > 3 || ejectionChargeUntrustCount >= 40)
+    {
+      ejectionChargeUntrust = false;
+      altitude = rawAltitude;
+      ejectionChargeUntrustCount = 0;
+      ejectionChargeRecoveryCount = 0;
+    }
+  }
+  else
+  {
+    altitude = rawAltitude;
+  }
+
+  // update history for next loop
+  secondLastAltitude = lastAltitude;
+  lastAltitude = altitude;
+
   // altitudeV = altitudeV580;
   altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
 #else
