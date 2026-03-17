@@ -184,12 +184,12 @@ void bnoSetup()
     // - VECTOR_GRAVITY       - m/s^2
     // If fakeimu is enabled, generate synthetic (but plausible) IMU values.
 
-    imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+    // imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
     // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
-    imu::Vector<3> linAccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+    // imu::Vector<3> linAccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
 
-    imu::Vector<3> mag = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
+    // imu::Vector<3> mag = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
   
     // imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     imu::Quaternion quat = bno.getQuat();
@@ -200,16 +200,16 @@ void bnoSetup()
     // orientation.gyro(degreesToRadians(yaw),degreesToRadians(pitch),degreesToRadians(roll));
     // Quaternion orientation(quat.w(),quat.x(),quat.y(),quat.z());
 
-    angularSpeed.gyro(degreesToRadians(gyro.x() * deltaT / 1000000),
-                      degreesToRadians(gyro.y() * deltaT / 1000000),
-                      degreesToRadians(gyro.z() * deltaT / 1000000));
+    // angularSpeed.gyro(degreesToRadians(gyro.x() * deltaT / 1000000),
+    //                   degreesToRadians(gyro.y() * deltaT / 1000000),
+    //                   degreesToRadians(gyro.z() * deltaT / 1000000));
     //orientation.mult(angularSpeed);
     // imu::Quaternion quat = bno.getQuat();
     bnoW = quat.w();
     bnoI = quat.x();
     bnoJ = quat.y();
     bnoK = quat.z();
-    GyroY = gyro.y();
+    // GyroY = gyro.y();
 
     bnoOrientation.setQuat(quat.w(),quat.x(),quat.y(),quat.z());
 
@@ -220,16 +220,16 @@ void bnoSetup()
   
     //trueAngle = magAngle(orientation, mag.x(), mag.y(), mag.z());
 
-    MagX = mag.x();
-    MagY = mag.y();
-    MagZ = mag.z();
+    // MagX = mag.x();
+    // MagY = mag.y();
+    // MagZ = mag.z();
 
     accelBnoX = accel.x();
     accelBnoY = accel.y();//put negative side if servos are on top
-    accelBnoZ = accel.z();
-    accelBnoLinearX = linAccel.x();
-    accelBnoLinearY = linAccel.y();
-    accelBnoLinearZ = linAccel.z();
+    // accelBnoZ = accel.z();
+    // accelBnoLinearX = linAccel.x();
+    // accelBnoLinearY = linAccel.y();
+    // accelBnoLinearZ = linAccel.z();
     bno.getCalibration(&systemCali,&gyroCali,&accelCali,&magCali);
         #ifdef IMU_DEBUG
         Serial.print(">");
