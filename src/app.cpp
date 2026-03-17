@@ -105,7 +105,7 @@ void timeStuff()
     return;
 
   // arbitrary delay
-  while (micros() - lastT < 10000)
+  while (micros() - lastT < 7000)
   {
     delayMicroseconds(1);
   }
@@ -600,7 +600,8 @@ void appLoop()
 #ifdef TEST_MODE
     fusedVelo = altitudeV580;
 #else
-    fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
+    // fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
+    fusedVelo = integratedVelocity;
 #endif
     accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
     accelTrust = clampDouble(0, 1, accelTrust);
