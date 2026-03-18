@@ -737,25 +737,28 @@ void appLoop()
 #pragma region
     fusedVelo = altitudeV580;
 
-    if ((fusedVelo < -15.0) && (!ejected))//ejection detected
+    if ((fusedVelo < -15.0) && (!ejected)) // ejection detected
     {
-      ejectionTimes = 20;//value needs to be tuned?
+      ejectionTimes = 20; // value needs to be tuned?
       ejected = true;
       lastGoodAltitude = altitude;
     }
     // the thing is ejecting don't trust altitude
-    if (ejectionTimes > 0) 
+    if (ejectionTimes > 0)
     { // ejection correction
       ejectionTimes--;
-      altitude = lastGoodAltitude; // hold 
+      altitude = lastGoodAltitude; // hold
     }
     else
     { // timout
       altitude = altitude;
     }
 
-    // closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
-    // openOpenSD();
+    if (ejected) // secure data logging
+    {
+      closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
+      openOpenSD();
+    }
     dataLogging();
 
     downwardLogic();
