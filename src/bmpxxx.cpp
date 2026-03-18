@@ -51,7 +51,7 @@ void baroSetup()
 {
   mySPI.begin(BMP_SCK, BMP_MISO, BMP_MOSI);
 
-  if (bmp581.begin(BMP_CS, &mySPI)) {
+  if (!bmp581.begin(BMP_CS, &mySPI)) {
     Serial.println("No BMP580 found!");
   }
 
