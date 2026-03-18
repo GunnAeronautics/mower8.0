@@ -311,8 +311,6 @@ double baroAltitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 double velocityZero[40] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int zeroIndex = 0;
 
-
-
 void appSetup()
 {
 #ifdef TEST_MODE
@@ -387,8 +385,9 @@ void downwardLogic()
   if ((millis() - paraDeployTime) > 2000)
   {
     if (parachuteDeployed)
-    {                                                    // after parachute deploy micro optimization
-      if (!alreadyPushedData){
+    { // after parachute deploy micro optimization
+      if (!alreadyPushedData)
+      {
         alreadyPushedData = true;
       }
       float tGround = timeToGround(altitude, fusedVelo); // sec
@@ -418,6 +417,10 @@ void downwardLogic()
 
 double groundAlt = 0;
 int lastDeployTime = 0;
+
+float ejectionTimes = 0;
+bool ejected = false;
+
 void appLoop()
 {
 #ifndef TEST_MODE
@@ -432,51 +435,6 @@ void appLoop()
   //   altitudeV = integratedVelocity;
   // }
 #ifndef TEST_MODE
-  float rawAltitude = newAltitude580 - groundAlt;
-
-  // detect ejection, >5 fall in one loop
-  if (!ejectionChargeUntrust && (lastAltitude - rawAltitude) > 5.0f) 
-  {
-    ejectionChargeUntrust = true;
-    ejectionChargeUntrustCount = 0;
-    ejectionChargeRecoveryCount = 0;
-    ejectionChargePreDipMax = max(lastAltitude, secondLastAltitude);
-    lastGoodAltitude = lastAltitude;
-  }
-
-  if (ejectionChargeUntrust)
-  {
-    ejectionChargeUntrustCount++;
-    float progress = min(1.0f, ejectionChargeUntrustCount / 40.0f);
-    // line estimator
-    altitude = lastGoodAltitude + (rawAltitude - lastGoodAltitude) * progress;
-
-    // check for recovery condition value climbed back up not befor dip max
-    if (rawAltitude > ejectionChargePreDipMax - 0.1f && rawAltitude <= ejectionChargePreDipMax + 0.1f)
-    {
-      ejectionChargeRecoveryCount++;
-    }
-    else
-    {
-      ejectionChargeRecoveryCount = 0;
-    }
-
-    if (ejectionChargeRecoveryCount > 3 || ejectionChargeUntrustCount >= 40)
-    {
-      ejectionChargeUntrust = false;
-      altitude = rawAltitude;
-      ejectionChargeUntrustCount = 0;
-      ejectionChargeRecoveryCount = 0;
-    }
-  }
-  else
-  {
-    altitude = rawAltitude;
-  }
-
-  // update history for next loop
-  secondLastAltitude = lastAltitude;
-  lastAltitude = altitude;
 
   // altitudeV = altitudeV580;
   altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
@@ -510,7 +468,6 @@ void appLoop()
 #pragma region
     dataLogging();
     //
-
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
@@ -650,6 +607,7 @@ void appLoop()
 #pragma endregion
   case 3: // coast up
 #pragma region
+
     dataLogging();
 
     // shitty homebrew "filter"
@@ -671,8 +629,8 @@ void appLoop()
       {
         flightState++;
         flightStateAdvancementTrigger = 0;
-         closeSD(); // writes to sd card cuz the hard times are over
-         openOpenSD();
+        closeSD(); // writes to sd card cuz the hard times are over
+        openOpenSD();
 
         closeCloseFlap(); // stows the airbrakes
         // detach();
@@ -778,6 +736,24 @@ void appLoop()
   case 4: // we going dow
 #pragma region
     fusedVelo = altitudeV580;
+
+    if ((fusedVelo < -15.0) && (!ejected))//ejection detected
+    {
+      ejectionTimes = 20;//value needs to be tuned?
+      ejected = true;
+      lastGoodAltitude = altitude;
+    }
+    // the thing is ejecting don't trust altitude
+    if (ejectionTimes > 0) 
+    { // ejection correction
+      ejectionTimes--;
+      altitude = lastGoodAltitude; // hold 
+    }
+    else
+    { // timout
+      altitude = altitude;
+    }
+
     // closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
     // openOpenSD();
     dataLogging();
@@ -794,9 +770,10 @@ void appLoop()
       timesTheRocketIsStill++;
       if (timesTheRocketIsStill > 30)
       {
-         closeSD(); // close the sd card once and for all
+        closeSD(); // close the sd card once and for all
         flightState++;
-        if (!alreadyPushedData){
+        if (!alreadyPushedData)
+        {
           alreadyPushedData = true;
         }
       }
