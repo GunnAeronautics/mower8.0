@@ -323,11 +323,15 @@ void appSetup()
   baroSetup();
   Serial.println("Barometric Sensor Setup Complete");
 
-  Wire.begin(ADXL343_SDA, ADXL343_SCL);
+  Wire.begin(ADXL343_SDA, ADXL343_SCL); // adxl
+  Wire1.begin(ADXL343_SCL,ADXL343_SDA); // bno
+
   Wire.setClock(100000);
-  bnoSetup();
+  Wire1.setClock(100000);
+  bnoSetup(); // wire1
   Serial.println("BNO Attached");
-  adxlSetup();
+
+  adxlSetup(); // wire
   Serial.println("ADXL343 Attached");
 
   sdSetup();

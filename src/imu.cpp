@@ -1,7 +1,7 @@
 #include "headers/sensors/imu.h"
 // #define IMU_DEBUG
 #ifdef BNO055
-Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29, &Wire);
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29, &Wire1);
 uint8_t systemCali,gyroCali,accelCali,magCali;
 #endif
 #ifdef BNO085
@@ -44,10 +44,10 @@ double bnoJ;
 double bnoK;
 
 void writeRegister(uint8_t reg, uint8_t value) {
-    Wire.beginTransmission(0x28); // BNO055 I2C address
-    Wire.write(reg);
-    Wire.write(value);
-    Wire.endTransmission();
+    Wire1.beginTransmission(0x28); // BNO055 I2C address
+    Wire1.write(reg);
+    Wire1.write(value);
+    Wire1.endTransmission();
   }
 #ifdef BNO085
   void bnoSetup(){
