@@ -338,6 +338,7 @@ void appSetup()
   Serial.println("Ground Temperature " + (String)getGroundTemp());
 
   servoSetup();
+  detachFlaps();
   lastT = micros();
   Serial.println("start");
   delay(5000);
@@ -362,6 +363,7 @@ void downwardLogic()
 {
   // function of altitude and function of altitude for optimal parachute deployment intercept
   // the logic just works out :D
+  if (!parachuteDeployed){
   if ((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY >
       altitude)
   {
@@ -377,7 +379,16 @@ void downwardLogic()
     deployChute();
     parachuteDeployed = true;
   }
-
+  }
+  else{//jiggle physics = on prevents tangling on servo
+    if (timeElapsed % 600 > 300){
+      deployChute();
+    }
+    else{
+      undeployChute();
+    }
+  }
+  
   if (parachuteDeployed == false)
   {
     paraDeployTime = millis();
@@ -567,6 +578,7 @@ void appLoop()
         integratedVelocity = velocityZero[zeroIndex];
         integratedAltitude = altitudeZero[zeroIndex];
         groundAlt = baroAltitudeZero[zeroIndex];
+        attachFlaps();//start flaps
         flightState++;
       }
     }
@@ -774,6 +786,8 @@ void appLoop()
       if (timesTheRocketIsStill > 30)
       {
         closeSD(); // close the sd card once and for all
+        detachFlaps();//save power unpowering flaps
+        detachDeploy();//save power unpowering flaps
         flightState++;
         if (!alreadyPushedData)
         {

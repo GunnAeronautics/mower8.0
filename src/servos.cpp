@@ -35,12 +35,22 @@ void moveFlaps(int angle){
 
     // servo4.write(angleToBlink(power));  
 }
-void detach(){
+
+void attachFlaps(){
+  servo2.attach(SERVO1_PIN);
+  servo3.attach(SERVO3_PIN);
+  // servo1.detach();
+}
+void detachFlaps(){
   servo2.detach();
   servo3.detach();
   // servo1.detach();
-  servo4.attach(SERVO4_PIN);
 }
+void detachDeploy(){
+  servo4.detach();
+  // servo1.detach();
+}
+
 void servoSetup(){
     // servo1.attach(SERVO1_PIN);
     servo2.attach(SERVO1_PIN);
