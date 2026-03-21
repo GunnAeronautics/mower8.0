@@ -50,7 +50,7 @@ bool lastDragFlapDeployed = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -381,7 +381,7 @@ void downwardLogic()
   }
   }
   else{//jiggle physics = on prevents tangling on servo
-    if (timeElapsed % 600 > 300){
+    if (timeElapsed % 600 > 200){
       deployChute();
     }
     else{
@@ -440,6 +440,7 @@ void appLoop()
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
+  altitude = newAltitude580;
 #endif
   // if (accelerometerTime){
   //   altitude = integratedAltitude;
@@ -448,8 +449,9 @@ void appLoop()
 #ifndef TEST_MODE
 
   // altitudeV = altitudeV580;
-  altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-#else
+  // altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
+  altitudeAccel =  -yAccel - GRAVITY;
+  #else
   // In TEST_MODE, altitude and altitudeAccel are set by test cases directly.
 #endif
 
@@ -479,6 +481,12 @@ void appLoop()
 #pragma region
     dataLogging();
     //
+    // if (millis() % 600 > 300){
+    //   deployChute();
+    // }
+    // else{
+    //   undeployChute();
+    // }
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
