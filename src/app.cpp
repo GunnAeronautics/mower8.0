@@ -480,13 +480,12 @@ void appLoop()
 
 #pragma region
     dataLogging();
-    //
-    // if (millis() % 600 > 300){
-    //   deployChute();
-    // }
-    // else{
-    //   undeployChute();
-    // }
+    if (timeElapsed % 600 > 200){
+      deployChute();
+    }
+    else{
+      undeployChute();
+    }
 
     // if ((accelVelo > 100)||(accelVelo < -100)){
     //   accelVelo = 0;
