@@ -61,21 +61,21 @@ void openOpenSD(){
 //   char *message = (char *)parameter;  
 //   writeCSVLine(SD, logFilename.c_str(), message);
 // }
-void sdSetup()
+bool sdSetup()
 {
   vspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
 
   if (!SD.begin(SD_CS, vspi))
   {
     Serial.println("Card Mount Failed");
-    return;
+    return false;
   }
   uint8_t cardType = SD.cardType();
 
   if (cardType == CARD_NONE)
   {
     Serial.println("No SD card attached");
-    return;
+    return false;
   }
 
   Serial.print("SD Card Type: ");
@@ -102,7 +102,7 @@ void sdSetup()
   logFilename = getNewLogFilename();
   Serial.println(logFilename);
   openSD(SD);
-
+  return true;
   // openSD(SD);
   // writeCSVLine(SD, logFilename.c_str(), datalogHeader.c_str());
 

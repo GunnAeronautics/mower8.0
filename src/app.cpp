@@ -308,9 +308,22 @@ void dataLogging()
 double altitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 double baroAltitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-double velocityZero[40] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+double velocityZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int zeroIndex = 0;
+void warn(){
+  for (int i = 0; i < 3; i++){
+      openOpenFlap();
+      digitalWrite(2, HIGH);
 
+      delay(500);
+      closeCloseFlap();
+      digitalWrite(2, LOW);
+
+      delay(500);
+    }
+  delay(500);
+
+}
 void appSetup()
 {
 #ifdef TEST_MODE
@@ -319,29 +332,40 @@ void appSetup()
 #else
   Serial.begin(115200);
   Serial.println("Serial Begin");
-
-  baroSetup();
-  Serial.println("Barometric Sensor Setup Complete");
+  pinMode(2, OUTPUT); // blue LED
 
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
   Wire.setClock(100000);
   bnoSetup();
   Serial.println("BNO Attached");
+
   adxlSetup();
   Serial.println("ADXL343 Attached");
 
-  sdSetup();
-  logData(getDataHeader());
-
+  baroSetup();
+  Serial.println("Barometric Sensor Setup Complete");
   Serial.println("Ground Pressure " + (String)getGroundPressure());
-#endif
   Serial.println("Ground Temperature " + (String)getGroundTemp());
 
   servoSetup();
+
+  if (!sdSetup()){
+    warn(); 
+  }
+  logData(getDataHeader());
+
+
+#endif
+
   detachFlaps();
-  lastT = micros();
   Serial.println("start");
+
+
+  delay(1000);
+  digitalWrite(2, HIGH);
+  delay(1000);
   delay(5000);
+  lastT = micros();
 
   for (int i = 0; i < 10; i++)
   {
@@ -351,11 +375,6 @@ void appSetup()
 
     delay(100);
   }
-  delay(1000);
-  pinMode(2, OUTPUT); // blue LED
-  digitalWrite(2, HIGH);
-  delay(1000);
-  delay(5000);
 }
 
 int paraDeployTime = 0;
@@ -449,8 +468,13 @@ void appLoop()
 #ifndef TEST_MODE
 
   // altitudeV = altitudeV580;
-  // altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
+  if (zenith > 100.0){
+    altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
+
+  }
+  else{
   altitudeAccel =  -yAccel - GRAVITY;
+  }
   #else
   // In TEST_MODE, altitude and altitudeAccel are set by test cases directly.
 #endif

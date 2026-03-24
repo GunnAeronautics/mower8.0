@@ -7,7 +7,7 @@
 #include <SPI.h>
 #include "../config/config.h"
 
-void sdSetup();
+bool sdSetup();
 String getNewLogFilename();
 void writeCSVLine(fs::FS &fs, const char *path, const char *message);
 void sdTask(void *parameter);
