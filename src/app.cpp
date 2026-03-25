@@ -484,15 +484,16 @@ void appLoop()
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
-  integratedVelocity = (integratedVelocity + altitudeAccel * deltaT / 1000000.0)*0.999+altitudeV580*0.001;
+  integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.999+altitudeV580*0.001;
   integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.99+newAltitude580*0.01;
-  if ((flightState>1)&&(flightState < 4)){
-    altitude = integratedAltitude;
+  altitude = newAltitude580;
+  // if ((flightState>1)&&(flightState < 4)){
+  //   altitude = integratedAltitude;
 
-  }
-  else{
-    altitude = newAltitude580;
-  }
+  // }
+  // else{
+  //   altitude = newAltitude580;
+  // }
   if (altitude > maxAltitude)
   { // set max altitude
     maxAltitude = altitude;
@@ -636,7 +637,7 @@ void appLoop()
 #else
     fusedVelo = integratedVelocity;
 #endif
-    if (altitudeAccel < 0 || timeElapsed > 2000 || fusedVelo < -1)
+    if (altitudeAccel < 0 || timeElapsed > 2000)
     // warning accel being under 0 does not neccecarily mean that thrust has stopped but it is close enough
     // timeElasped > 2000 is just a safety to make sure it deploys for whatever reason
     // altitudeV < 0.5 is another cooked safety just in the rocket like hella tumbles
@@ -668,12 +669,12 @@ void appLoop()
     // fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
     fusedVelo = integratedVelocity;
 #endif
-    accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
-    accelTrust = clampDouble(0, 1, accelTrust);
+    // accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
+    // accelTrust = clampDouble(0, 1, accelTrust);
 
     // velocity less than 0.5 means the rocket is going down
     // timeElasped over 10 sec is safety
-    if (fusedVelo < 0.5 || timeElapsed > 10000)
+    if (timeElapsed > 7500)
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10) // ok lets start the descent
