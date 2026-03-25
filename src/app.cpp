@@ -459,7 +459,8 @@ void appLoop()
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
-  altitude = newAltitude580;
+
+  
 #endif
   // if (accelerometerTime){
   //   altitude = integratedAltitude;
@@ -483,8 +484,15 @@ void appLoop()
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
-  integratedVelocity += altitudeAccel * deltaT / 1000000.0;
-  integratedAltitude += integratedVelocity * deltaT / 1000000.0;
+  integratedVelocity = (integratedVelocity + altitudeAccel * deltaT / 1000000.0)*0.999+altitudeV580*0.001;
+  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.99+newAltitude580*0.01;
+  if ((flightState>1)&&(flightState < 4)){
+    altitude = integratedAltitude;
+
+  }
+  else{
+    altitude = newAltitude580;
+  }
   if (altitude > maxAltitude)
   { // set max altitude
     maxAltitude = altitude;
