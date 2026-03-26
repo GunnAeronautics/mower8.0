@@ -288,8 +288,8 @@ void dataLogging()
       String(dragCoefficient, DATAPRECISION) + ',' +
       String(desiredDragCoef, DATAPRECISION) + ',' +
       String(CdError, DATAPRECISION) + ',' +
-      String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
-      String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
+      String(predictApogee(integratedAltitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
+      String(predictApogee(integratedAltitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
       String(parachuteDeployed * 100) + ',' +
       String(dragFlapDeployed * 100) + ',' +
       String(airbrakeAngle, DATAPRECISION) + ',' +
@@ -392,7 +392,7 @@ void downwardLogic()
   }
   // safety
   // if the rocket is under 15 meters in the air deploy asap
-  if (altitude < 60.0)
+  if (altitude < 20.0)
   {
 
     deployChute();
@@ -740,7 +740,7 @@ void appLoop()
     // }
 
     // advanced code vvv
-    desiredDragCoef = inverseApogee(altitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
     if (desiredDragCoef > dragCoefficient)
     {
       if (abs(CdError) > 0.0050)

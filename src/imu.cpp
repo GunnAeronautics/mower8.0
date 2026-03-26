@@ -93,6 +93,9 @@ void bnoSetup()
     // bno.setMode(OPERATION_MODE_CONFIG);
     // bno.setMode(OPERATION_MODE_NDOF);
     bno.setMode(OPERATION_MODE_NDOF);
+  // bno.setAxisSign(
+  //   Adafruit_BNO055::REMAP_SIGN_P1    // flips Y (depends on config)
+  // );
     delay(25); // Allow sensor to stabilize
     // writeRegister(ACC_CONFIG_REGISTER, 0x0C); // Set range to ±16g
     // Serial.println("Accelerometer set to ±16g range.");
