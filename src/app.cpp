@@ -288,8 +288,8 @@ void dataLogging()
       String(dragCoefficient, DATAPRECISION) + ',' +
       String(desiredDragCoef, DATAPRECISION) + ',' +
       String(CdError, DATAPRECISION) + ',' +
-      String(predictApogee(integratedAltitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
-      String(predictApogee(integratedAltitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
+      String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
+      String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
       String(parachuteDeployed * 100) + ',' +
       String(dragFlapDeployed * 100) + ',' +
       String(airbrakeAngle, DATAPRECISION) + ',' +
@@ -557,7 +557,7 @@ void appLoop()
     Serial.print(",");
 
     Serial.print("accel: ");
-    Serial.print(altitudeAccel, DATAPRECISION);
+    Serial.print(altitudeAccel, DATAPRECISION);    
     Serial.print(", ");
     Serial.print("zenith: ");
     Serial.print(zenith, DATAPRECISION);
@@ -642,7 +642,7 @@ void appLoop()
 #else
     fusedVelo = integratedVelocity;
 #endif
-    if (altitudeAccel < 0 || timeElapsed > 2000)
+    if (altitudeAccel < 0 || timeElapsed > 2500)
     // warning accel being under 0 does not neccecarily mean that thrust has stopped but it is close enough
     // timeElasped > 2000 is just a safety to make sure it deploys for whatever reason
     // altitudeV < 0.5 is another cooked safety just in the rocket like hella tumbles
@@ -679,7 +679,7 @@ void appLoop()
 
     // velocity less than 0.5 means the rocket is going down
     // timeElasped over 10 sec is safety
-    if (timeElapsed > 7500)
+    if (timeElapsed > 8500)
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10) // ok lets start the descent
@@ -745,7 +745,7 @@ void appLoop()
     // }
 
     // advanced code vvv
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(altitude, DESIRED_APOGEE, fusedVelo);
     if (desiredDragCoef > dragCoefficient)
     {
       if (abs(CdError) > 0.0050)

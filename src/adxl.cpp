@@ -38,13 +38,22 @@ extern double zAccel = 0.0;
 // float Z_SCALE = 1.004359;
 
 // new board old adxl (A1)
-double X_OFFSET = -0.217711;
-double Y_OFFSET = 0.104547;
-double Z_OFFSET = 0.295374;
+// double X_OFFSET = -0.217711;
+// double Y_OFFSET = 0.104547;
+// double Z_OFFSET = 0.295374;
 
-double X_SCALE = 0.971194;
-double Y_SCALE = 0.974659;
-double Z_SCALE = 1.008735;
+// double X_SCALE = 0.971194;
+// double Y_SCALE = 0.974659;
+// double Z_SCALE = 1.008735;
+
+// new board new adxl (A0)
+double X_OFFSET = -0.316175;
+double Y_OFFSET = -0.052467;
+double Z_OFFSET = -0.064825;
+
+double X_SCALE = 0.979988;
+double Y_SCALE = 0.972262;
+double Z_SCALE = 1.011133;
 
 /* Assign a unique ID to this sensor at the same time */
 /* Using I2C on default Wire bus */
