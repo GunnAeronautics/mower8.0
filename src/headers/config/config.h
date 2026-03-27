@@ -1,8 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define A0BOARD
-// #define A1BOARD
+// #define A0BOARD
+#define A1BOARD
 #define FAKE_IMU false
 // #define DEBUG
 
@@ -61,7 +61,8 @@
 // ============================================================================
 
 // Apogee and flight time targets (TARC competition specifications)
-#define DESIRED_APOGEE 228.6 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+// #define DESIRED_APOGEE 228.6 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+#define DESIRED_APOGEE 190.0  //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 
 //6.5 765
 //2.5 756
@@ -70,7 +71,9 @@
 //WARNING DOES NOT ACCOUNT FOR THE 
 // Parachute and drag flap configuration
 // #define PARACHUTE_TERM_VELOCITY 6.5 // m/s
+// #define PARACHUTE_TERM_VELOCITY 6.1//spill hole // m/s real // old = 6.65, new = 5.600991463
 #define PARACHUTE_TERM_VELOCITY 6.1 // m/s real // old = 6.65, new = 5.600991463
+
 //6.31 works with 3 to 6mph wind 610 G
 //5.56 13 mph ~610
 #define MASS 0.630//after motor burnout kg

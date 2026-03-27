@@ -50,7 +50,7 @@ bool lastDragFlapDeployed = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -171,15 +171,20 @@ float clampDouble(float mini, float maxi, float val)
 { // clamps value between min and max
   return max(mini, min(maxi, val));
 }
+
+float searchRangeH = 0.1;
+float searchRangeL = 0;
+float prediction;
+float mid;
 float inverseApogee(double alt, double desiredApogee, double v)
 { // Working & Tested
-  float searchRangeH = 0.1;
-  float searchRangeL = 0; // SEARCH RANGE IS 0<m<1
-  float mid;
+  searchRangeH = 0.1;
+  searchRangeL = 0; // SEARCH RANGE IS 0<m<1
+  ;
   for (int i = 0; i < 20; i++)
   {
     mid = (searchRangeL + searchRangeH) / 2.0;
-    float prediction = predictApogee(alt, v, mid);
+    prediction = predictApogee(alt, v, mid);
 
     if (prediction < desiredApogee)
     { // to the left of desired
@@ -679,7 +684,7 @@ void appLoop()
 
     // velocity less than 0.5 means the rocket is going down
     // timeElasped over 10 sec is safety
-    if (timeElapsed > 8500)
+    if (timeElapsed > 7500)
     {
       flightStateAdvancementTrigger++;
       if (flightStateAdvancementTrigger > 10) // ok lets start the descent
