@@ -1,7 +1,12 @@
 #include "headers/sensors/imu.h"
 // #define IMU_DEBUG
 #ifdef BNO055
+#ifdef A0BOARD
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
+#endif
+#ifdef A1BOARD
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29, &Wire);
+#endif
 uint8_t systemCali,gyroCali,accelCali,magCali;
 #endif
 #ifdef BNO085
@@ -93,9 +98,8 @@ void bnoSetup()
     // bno.setMode(OPERATION_MODE_CONFIG);
     // bno.setMode(OPERATION_MODE_NDOF);
     bno.setMode(OPERATION_MODE_NDOF);
-  // bno.setAxisSign(
-  //   Adafruit_BNO055::REMAP_SIGN_P1    // flips Y (depends on config)
-  // );
+
+  
     delay(25); // Allow sensor to stabilize
     // writeRegister(ACC_CONFIG_REGISTER, 0x0C); // Set range to ±16g
     // Serial.println("Accelerometer set to ±16g range.");
@@ -215,9 +219,17 @@ void bnoSetup()
     // GyroY = gyro.y();
 
     bnoOrientation.setQuat(quat.w(),quat.x(),quat.y(),quat.z());
+  
+    #ifdef A0BOARD
+    zenith = angleBetweenAxis(bnoOrientation,"Y-");
+    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z-");
 
+    #endif
+    #ifdef A1BOARD
     zenith = angleBetweenAxis(bnoOrientation,"Y+");
     zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+
+    #endif
     //xGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "X+");
     //yGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Y+");
   
@@ -233,7 +245,7 @@ void bnoSetup()
     // accelBnoLinearX = linAccel.x();
     // accelBnoLinearY = linAccel.y();
     // accelBnoLinearZ = linAccel.z();
-    bno.getCalibration(&systemCali,&gyroCali,&accelCali,&magCali);
+    // bno.getCalibration(&systemCali,&gyroCali,&accelCali,&magCali);
         #ifdef IMU_DEBUG
         Serial.print(">");
         Serial.print("DeltaT: ");

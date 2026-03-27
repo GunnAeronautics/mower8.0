@@ -50,7 +50,7 @@ bool lastDragFlapDeployed = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
+int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -470,8 +470,12 @@ void appLoop()
 
   // altitudeV = altitudeV580;
   if (zenith > 100.0){
+    #ifdef A1BOARD
     altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-
+    #endif
+    #ifdef A0BOARD
+    altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z-") - GRAVITY; // positive is upward and no gravity factored
+    #endif
   }
   else{
   altitudeAccel =  -yAccel - GRAVITY;
@@ -558,6 +562,7 @@ void appLoop()
     Serial.print("zenith: ");
     Serial.print(zenith, DATAPRECISION);
     Serial.print(", ");
+    
     // Serial.print("accelY: ");
     // Serial.print(accelBnoY,DATAPRECISION);
     // Serial.print(", ");

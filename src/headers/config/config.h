@@ -1,7 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-
+#define A0BOARD
+// #define A1BOARD
 #define FAKE_IMU false
 // #define DEBUG
 
