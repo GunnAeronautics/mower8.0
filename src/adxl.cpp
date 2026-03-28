@@ -27,7 +27,14 @@ extern double zAccel = 0.0;
 // float Y_SCALE = 0.974706;
 // float Z_SCALE = 1.003159;
 
+//defaults
+// float X_OFFSET = 0;
+// float Y_OFFSET = 0;
+// float Z_OFFSET = 0;
 
+// float X_SCALE = 1.0;
+// float Y_SCALE = 1.0;
+// float Z_SCALE = 1.0;
 //old board new adxl
 // float X_OFFSET = -0.275670;
 // float Y_OFFSET = 0.049140;

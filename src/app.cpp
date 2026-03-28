@@ -149,7 +149,7 @@ void timeStuff()
 
 float predictApogee(float alt, float v, float dragCoef)
 {
-  return alt + log((dragCoef * v * v / 9.81) + 1) / (2.0 * dragCoef);
+  return alt + log((dragCoef * v * v / 9.81) + 1.0) / (2.0 * dragCoef);
 }
 
 float predictApogeeIdeal(float alt, float v)
@@ -176,8 +176,9 @@ float searchRangeH = 0.1;
 float searchRangeL = 0;
 float prediction;
 float mid;
-float inverseApogee(double alt, double desiredApogee, double v)
-{ // Working & Tested
+float inverseApogee(float alt, float desiredApogee, float v)
+{ // Working & Tested not any ore
+  
   searchRangeH = 0.1;
   searchRangeL = 0; // SEARCH RANGE IS 0<m<1
   ;
@@ -293,8 +294,8 @@ void dataLogging()
       String(dragCoefficient, DATAPRECISION) + ',' +
       String(desiredDragCoef, DATAPRECISION) + ',' +
       String(CdError, DATAPRECISION) + ',' +
-      String(predictApogee(altitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
-      String(predictApogee(altitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
+      String(predictApogee(integratedAltitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
+      String(predictApogee(integratedAltitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
       String(parachuteDeployed * 100) + ',' +
       String(dragFlapDeployed * 100) + ',' +
       String(airbrakeAngle, DATAPRECISION) + ',' +
@@ -367,9 +368,12 @@ void appSetup()
 
 
   delay(1000);
-  digitalWrite(2, HIGH);
+  if (flightState != 0){
+    digitalWrite(2, HIGH);
+
+  }
   delay(1000);
-  delay(5000);
+  delay(3000);
   lastT = micros();
 
   for (int i = 0; i < 10; i++)
@@ -474,7 +478,7 @@ void appLoop()
 #ifndef TEST_MODE
 
   // altitudeV = altitudeV580;
-  if (zenith > 100.0){
+  if ((zenith > 100.0)||(flightState == 0)){
     #ifdef A1BOARD
     altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
     #endif
@@ -483,18 +487,19 @@ void appLoop()
     #endif
   }
   else{
-  altitudeAccel =  -yAccel - GRAVITY;
+    altitudeAccel =  -yAccel - GRAVITY;
   }
   #else
   // In TEST_MODE, altitude and altitudeAccel are set by test cases directly.
 #endif
 
-  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0, INFINITY, pow(fusedVelo, 2)));
+  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0.01, 500, pow(fusedVelo, 2)));
+  dragCoefficient = clampDouble(0,1,dragCoefficient);//safety for predict apogee
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.999+altitudeV580*0.001;
-  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.99+newAltitude580*0.01;
+  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.992+newAltitude580*0.008;
   altitude = newAltitude580;
   // if ((flightState>1)&&(flightState < 4)){
   //   altitude = integratedAltitude;
@@ -517,21 +522,19 @@ void appLoop()
   switch (flightState)
   {
   case 0: // happy data printing mode
-    fusedVelo = altitudeV580;
-    // dataLogging();
+    fusedVelo = integratedVelocity;
+    dataLogging();
 
 #pragma region
-    dataLogging();
-    if (timeElapsed % 600 > 200){
-      deployChute();
-    }
-    else{
-      undeployChute();
-    }
-
-    // if ((accelVelo > 100)||(accelVelo < -100)){
-    //   accelVelo = 0;
+    // dataLogging();
+    // desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    // if (timeElapsed % 600 > 200){
+    //   deployChute();
     // }
+    // else{
+    //   undeployChute();
+    // }
+
     Serial.print(">");
     Serial.print("DeltaT: ");
     Serial.print(deltaT);
@@ -543,12 +546,12 @@ void appLoop()
     // Serial.print("Ground Pres: ");
     // Serial.print(getGroundPressure(),DATAPRECISION);
     // Serial.print(", ");
-    // Serial.print("Pressure: ");
-    // Serial.print(getBaroData_BMP580_pressure(),DATAPRECISION);
-    // Serial.print(", ");
 
-    Serial.print("BMP580: ");
-    Serial.print(altitude, DATAPRECISION);
+    Serial.print("BaroAlt: ");
+    Serial.print(newAltitude580, DATAPRECISION);
+    Serial.print(", ");
+    Serial.print("intAlt: ");
+    Serial.print(integratedAltitude, DATAPRECISION);
     Serial.print(", ");
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
@@ -557,7 +560,7 @@ void appLoop()
     // Serial.print(altitudeV390,DATAPRECISION);
     // Serial.print(", ");
 
-    Serial.print("BMP580Velo: ");
+    Serial.print("fusedVelo: ");
     Serial.print(fusedVelo, DATAPRECISION);
     Serial.print(",");
 
@@ -567,7 +570,19 @@ void appLoop()
     Serial.print("zenith: ");
     Serial.print(zenith, DATAPRECISION);
     Serial.print(", ");
-    
+    Serial.print("dragCoef: ");
+    Serial.print(dragCoefficient, DATAPRECISION);
+    Serial.print(", ");
+    // Serial.print("target: ");
+    // Serial.print(desiredDragCoef, DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("predApog: ");
+    // Serial.print(predictApogee(integratedAltitude,fusedVelo,dragCoefficient), DATAPRECISION);
+    // Serial.print(", ");
+
+    Serial.print("inverseApog: ");
+    Serial.print(inverseApogee(integratedAltitude,DESIRED_APOGEE, integratedVelocity), DATAPRECISION);
+    Serial.print(", ");
     // Serial.print("accelY: ");
     // Serial.print(accelBnoY,DATAPRECISION);
     // Serial.print(", ");
@@ -750,7 +765,7 @@ void appLoop()
     // }
 
     // advanced code vvv
-    desiredDragCoef = inverseApogee(altitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
     if (desiredDragCoef > dragCoefficient)
     {
       if (abs(CdError) > 0.0050)
@@ -798,10 +813,13 @@ void appLoop()
   case 4: // we going dow
 #pragma region
     fusedVelo = altitudeV580;
+    closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
+    openOpenSD();
+    dataLogging();
 
     if ((fusedVelo < -15.0) && (!ejected)) // ejection detected
     {
-      ejectionTimes = 20; // value needs to be tuned?
+      ejectionTimes = 10; // value needs to be tuned?
       ejected = true;
       lastGoodAltitude = altitude;
     }
@@ -816,12 +834,7 @@ void appLoop()
       altitude = altitude;
     }
 
-    if (ejected) // secure data logging
-    {
-      closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
-      openOpenSD();
-    }
-    dataLogging();
+
 
     downwardLogic();
 
