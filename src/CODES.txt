@@ -1,0 +1,24 @@
+Solid Green is Rocket Is In AIR
+
+Blinking Green is Rocket Is Armed And READY
+
+Solid Orange is pre-Startup / Servo testing
+
+Blinking Blue is Rocket Is Arming (after pre Startup)
+
+Solid Red on left light means Fatal error, the right led will indicate error
+
+Solid Blue on left light indicates Non Fatal error, the right led will indicate warning
+
+Error/warning codes:
+Right LED blinks white to indicate code
+
+Long blinks = 10
+Short blinks = 1
+
+
+1 = bno errror
+2 = adxl error
+3 = baro error
+4 = servo error
+5 = sd error
