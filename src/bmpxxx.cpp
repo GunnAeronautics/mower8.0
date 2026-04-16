@@ -1,4 +1,5 @@
 #include "headers/sensors/bmpxxx.h"
+#include "headers/utils/Led.h"
 #include <Adafruit_BMP5xx.h>
 #include <stdexcept>
 
@@ -53,6 +54,7 @@ void baroSetup()
 
   if (!bmp581.begin(BMP_CS, &mySPI)) {
     Serial.println("No BMP580 found!");
+    LedModeError(3, true);
   }
 
   Serial.println("BMP580 sensor found!");

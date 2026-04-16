@@ -20,6 +20,7 @@
 #include "headers/sensors/imu.h"
 #include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
+#include "headers/utils/led.h"
 #endif
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -353,10 +354,14 @@ void appSetup()
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
 
+  setupLED();
+  LedMode(LED_MODE_PRE_STARTUP);
   servoSetup();
+  LedMode(LED_MODE_ARMING);
 
   if (!sdSetup()){
     warn(); 
+    LedModeError(5, true);
   }
   logData(getDataHeader());
 
@@ -384,6 +389,9 @@ void appSetup()
 
     delay(100);
   }
+
+  LedMode(LED_MODE_ARMED_READY);
+
 }
 
 int paraDeployTime = 0;
@@ -468,7 +476,7 @@ void appLoop()
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
-
+  ledLoop(timeElapsed);
   
 #endif
   // if (accelerometerTime){
@@ -639,7 +647,7 @@ void appLoop()
       if (flightStateAdvancementTrigger > 3)
       {
         startTimeStamp = millis();
-
+        LedMode(LED_MODE_IN_AIR);
         integratedVelocity = velocityZero[zeroIndex];
         integratedAltitude = altitudeZero[zeroIndex];
         groundAlt = baroAltitudeZero[zeroIndex];
@@ -852,6 +860,7 @@ void appLoop()
         detachFlaps();//save power unpowering flaps
         detachDeploy();//save power unpowering flaps
         flightState++;
+        ledScoring(maxAltitude, timeElapsed); // start scoring
         if (!alreadyPushedData)
         {
           alreadyPushedData = true;

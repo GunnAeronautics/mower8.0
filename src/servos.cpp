@@ -1,5 +1,6 @@
 #include "headers/utils/servos.h"
 #include "headers/config/config.h"
+#include "headers/utils/Led.h"
 
 float minServo1 = 0;
 float maxServo1 = 100;
@@ -53,9 +54,13 @@ void detachDeploy(){
 
 void servoSetup(){
     // servo1.attach(SERVO1_PIN);
-    servo2.attach(SERVO1_PIN);
-    servo3.attach(SERVO3_PIN);
-    servo4.attach(SERVO4_PIN);
+    if (
+    servo2.attach(SERVO1_PIN) == 0 ||
+    servo3.attach(SERVO3_PIN) == 0 ||
+    servo4.attach(SERVO4_PIN) == 0)
+    {
+      LedModeError(4, true);
+    }
 
     Serial.println("Servo Attached");
 

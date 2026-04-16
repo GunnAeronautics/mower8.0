@@ -1,4 +1,5 @@
 #include "headers/sensors/imu.h"
+#include "headers/utils/Led.h"
 // #define IMU_DEBUG
 #ifdef BNO055
 #ifdef A0BOARD
@@ -91,6 +92,7 @@ void bnoSetup()
     {
       /* There was a problem detecting the BNO055 ... check your connections */
       Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+      LedModeError(1, true);
       while (1)
         ;
     }

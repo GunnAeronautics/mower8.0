@@ -1,4 +1,5 @@
 #include "headers/sensors/adxl.h"
+#include "headers/utils/Led.h"
 
 /* Pin definitions for I2C:
 #define ADXL343_SDA 21
@@ -163,6 +164,8 @@ void adxlSetup(void)
   {
     /* There was a problem detecting the ADXL343 ... check your connections */
     Serial.println("Could not find a valid ADXL343 sensor, check wiring!");
+    LedModeError(2, true);
+
     while(1);
   }
 
