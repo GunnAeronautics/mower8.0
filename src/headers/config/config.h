@@ -18,8 +18,8 @@
 
 // BMP581 Barometric Sensor Pins
 #define BMP_SCK 13 //clk // scl
-#define BMP_MISO 27 //sdo // 
-#define BMP_MOSI 14 //sda //
+#define BMP_MISO 14 //sdo // 
+#define BMP_MOSI 27 //sda //
 #define BMP_CS 32
 
 // ADXL343 Accelerometer Pins, -- uses i2c now
@@ -31,8 +31,11 @@
 #define ADXL343_SCL 22
 #define ADXL343_SDA 5
 
- //BNO055 IMU I2C Configuration
+ //BNO055 IMU I2C Configuration is the same as ADXL343
 
+
+// RGB LED Pin
+#define Led_Pin 23
 
 
 // SD Card SPI Pins
