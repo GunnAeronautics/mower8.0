@@ -17,8 +17,8 @@ void LedModeError(int code, bool isFatal);
 void ledLoop(long timeElapsed);
 void ledScoring(float altitude, long timeElapsed);
 void clearLED();
-void setLEDColor(uint8_t r, uint8_t g, uint8_t b);
-void setLED0Color(uint8_t r, uint8_t g, uint8_t b);
-void setLED1Color(uint8_t r, uint8_t g, uint8_t b);
+void setLEDColor(int r, int g, int b);
+void setLED0Color(int r, int g, int b);
+void setLED1Color(int r, int g, int b);
 
 #endif // LED_H

@@ -8,18 +8,43 @@ bool blink = false;
 bool errorBlink = false;
 bool isFatalError = false;
 int blinkrate = 500;
-long timeElapsed = 0;
+long timeElapsed1 = 0;
 long lastTime = 0;
 int lastErrorCode = 0;
 int currentBlinkColor_r = 0, currentBlinkColor_g = 0, currentBlinkColor_b = 0;
 int score = 0;
 bool scoring = false;
-int altitude = 0;
+int altitude1 = 0;
 
 int score10s = 0, score1s = 0, altitude10s = 0, altitude1s = 0;
 
 Adafruit_NeoPixel pixels(NUMPIXELS, Led_Pin, NEO_GRB + NEO_KHZ800);
 // Led 1 and 2
+
+void clearLED()
+{
+    pixels.clear();
+    pixels.show();
+}
+
+void setLEDColor(int r, int g, int b)
+{
+    pixels.setPixelColor(0, pixels.Color(r, g, b));
+    pixels.setPixelColor(1, pixels.Color(r, g, b));
+    pixels.show();
+}
+
+void setLED0Color(int r, int g, int b)
+{
+    pixels.setPixelColor(0, pixels.Color(r, g, b));
+    pixels.show();
+}
+
+void setLED1Color(int r, int g, int b)
+{
+    pixels.setPixelColor(1, pixels.Color(r, g, b));
+    pixels.show();
+}
 
 void setupLED()
 {
@@ -89,27 +114,27 @@ void LedMode(int mode)
     }
 }
 
-void ledScoring(float altitude1, long timeElapsed)
+void ledScoring(float altitude2, long timeElapsed1)
 {
     scoring = true;
-    altitude1 *= 3.280839895; // convert m to ft
-    if (timeElapsed > 39)
+    altitude2 *= 3.280839895; // convert m to ft
+    if (timeElapsed1 > 39)
     {
-        score = (39 - timeElapsed) * 4;
+        score = (39 - timeElapsed1) * 4;
     }
-    else if (timeElapsed < 36)
+    else if (timeElapsed1 < 36)
     {
-        score = (36 - timeElapsed) * 4;
+        score = (36 - timeElapsed1) * 4;
     }
 
-    score += abs(altitude1 - (DESIRED_APOGEE * 3.280839895)); // ft
-    altitude = altitude1;
+    score += abs(altitude2 - (DESIRED_APOGEE * 3.280839895)); // ft
+    altitude1 = altitude2;
 
     score10s = floor(score / 10);
     score1s = score % 10;
 
-    altitude10s = floor(altitude / 10);
-    altitude1s = altitude % 10;
+    altitude10s = floor(altitude1 / 10);
+    altitude1s = altitude1 % 10;
 }
 
 void LedModeError(int code, bool isFatal)
@@ -125,7 +150,7 @@ void LedModeError(int code, bool isFatal)
     }
 }
 
-void ledLoop(long timeElapsed)
+void ledLoop(long timeElapsed1)
 {
     if (errorBlink)
     {
@@ -206,7 +231,7 @@ void ledLoop(long timeElapsed)
 
         delay(1000);
     }
-    else if (blink && timeElapsed - lastTime >= blinkrate)
+    else if (blink && timeElapsed1 - lastTime >= blinkrate)
     {
         uint32_t currentColor = pixels.getPixelColor(0);
         uint32_t targetColor = pixels.Color(currentBlinkColor_r, currentBlinkColor_g, currentBlinkColor_b);
@@ -219,31 +244,6 @@ void ledLoop(long timeElapsed)
         {
             setLEDColor(currentBlinkColor_r, currentBlinkColor_g, currentBlinkColor_b);
         }
-        lastTime = timeElapsed;
+        lastTime = timeElapsed1;
     }
-}
-
-void clearLED()
-{
-    pixels.clear();
-    pixels.show();
-}
-
-void setLEDColor(uint8_t r, uint8_t g, uint8_t b)
-{
-    pixels.setPixelColor(0, pixels.Color(r, g, b));
-    pixels.setPixelColor(1, pixels.Color(r, g, b));
-    pixels.show();
-}
-
-void setLED0Color(uint8_t r, uint8_t g, uint8_t b)
-{
-    pixels.setPixelColor(0, pixels.Color(r, g, b));
-    pixels.show();
-}
-
-void setLED1Color(uint8_t r, uint8_t g, uint8_t b)
-{
-    pixels.setPixelColor(1, pixels.Color(r, g, b));
-    pixels.show();
 }
