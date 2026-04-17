@@ -33,6 +33,8 @@
 
  //BNO055 IMU I2C Configuration is the same as ADXL343
 
+// flight enable button
+#define FLIGHTENPIN 16
 
 // RGB LED Pin
 #define Led_Pin 23

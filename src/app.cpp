@@ -48,6 +48,9 @@ bool dragFlapDeployed = false;
 bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 
+// flight enable button
+bool loopEnabled = false;
+
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
@@ -391,6 +394,16 @@ void appSetup()
   }
 
   LedMode(LED_MODE_ARMED_READY);
+
+  pinMode(FLIGHTENPIN, INPUT_PULLDOWN);
+
+  while(!loopEnabled) {
+    if (digitalRead(FLIGHTENPIN) == HIGH) {
+      loopEnabled = true;
+      pinMode(FLIGHTENPIN, OUTPUT);
+    }
+    delay(100);
+  }
 
 }
 
