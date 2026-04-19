@@ -20,7 +20,7 @@
 #include "headers/sensors/imu.h"
 #include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
-#include "headers/utils/led.h"
+// #include "headers/utils/led.h"
 #endif
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -49,7 +49,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 
 // flight enable button
-bool loopEnabled = false;
+// bool loopEnabled = false;
 
 bool alreadyPushedData = false;
 // States & triggers
@@ -357,19 +357,21 @@ void appSetup()
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
 
-  setupLED();
-  LedMode(LED_MODE_PRE_STARTUP);
+  // setupLED();
+  // LedMode(LED_MODE_PRE_STARTUP);
   servoSetup();
-  LedMode(LED_MODE_ARMING);
+  // LedMode(LED_MODE_ARMING);
+  Serial.println("Starting sd setup, expect garbled text\n");
+  Serial.end();
 
   if (!sdSetup()){
     warn(); 
-    LedModeError(5, true);
+    // LedModeError(5, true);
   }
   logData(getDataHeader());
 
-
-#endif
+  Serial.begin(115200);
+  #endif
 
   detachFlaps();
   Serial.println("start");
@@ -393,17 +395,18 @@ void appSetup()
     delay(100);
   }
 
-  LedMode(LED_MODE_ARMED_READY);
+  // LedMode(LED_MODE_ARMED_READY);
 
-  pinMode(FLIGHTENPIN, INPUT_PULLDOWN);
+  // pinMode(FLIGHTENPIN, INPUT_PULLDOWN);
 
-  while(!loopEnabled) {
-    if (digitalRead(FLIGHTENPIN) == HIGH) {
-      loopEnabled = true;
-      pinMode(FLIGHTENPIN, OUTPUT);
-    }
-    delay(100);
-  }
+  // while(!loopEnabled) {
+  //   if (digitalRead(FLIGHTENPIN) == HIGH) {
+  //     loopEnabled = true;
+  //     pinMode(FLIGHTENPIN, OUTPUT);
+  //   }
+  //   delay(100);
+  // }
+
 
 }
 
@@ -489,7 +492,7 @@ void appLoop()
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
-  ledLoop(timeElapsed);
+  // ledLoop(timeElapsed);
   
 #endif
   // if (accelerometerTime){
@@ -544,8 +547,9 @@ void appLoop()
   {
   case 0: // happy data printing mode
     fusedVelo = integratedVelocity;
+    Serial.end();
     dataLogging();
-
+    Serial.begin(115200);
 #pragma region
     // dataLogging();
     // desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
@@ -660,11 +664,12 @@ void appLoop()
       if (flightStateAdvancementTrigger > 3)
       {
         startTimeStamp = millis();
-        LedMode(LED_MODE_IN_AIR);
+        // LedMode(LED_MODE_IN_AIR);
         integratedVelocity = velocityZero[zeroIndex];
         integratedAltitude = altitudeZero[zeroIndex];
         groundAlt = baroAltitudeZero[zeroIndex];
         attachFlaps();//start flaps
+        Serial.end();
         flightState++;
       }
     }
@@ -873,7 +878,7 @@ void appLoop()
         detachFlaps();//save power unpowering flaps
         detachDeploy();//save power unpowering flaps
         flightState++;
-        ledScoring(maxAltitude, timeElapsed); // start scoring
+        // ledScoring(maxAltitude, timeElapsed); // start scoring
         if (!alreadyPushedData)
         {
           alreadyPushedData = true;

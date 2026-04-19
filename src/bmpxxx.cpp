@@ -54,10 +54,11 @@ void baroSetup()
 
   if (!bmp581.begin(BMP_CS, &mySPI)) {
     Serial.println("No BMP580 found!");
-    LedModeError(3, true);
-  }
-
+    while (1);
+    // LedModeError(3, true);
+  } else {
   Serial.println("BMP580 sensor found!");
+  }
 
   bmp581.setPressureOversampling(BMP5XX_OVERSAMPLING_16X);
   bmp581.setIIRFilterCoeff(BMP5XX_IIR_FILTER_COEFF_3);

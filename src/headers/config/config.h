@@ -1,8 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// #define A0BOARD
-#define A1BOARD
+#define A0BOARD
+// #define A1BOARD
 #define FAKE_IMU false
 // #define DEBUG
 
@@ -27,7 +27,7 @@
 #define ADXL343_MISO 12
 #define ADXL343_MOSI 11
 #define ADXL343_CS 10*/
-#define ADXL343_ADR 0x53
+#define ADXL343_ADR 0x53 
 #define ADXL343_SCL 22
 #define ADXL343_SDA 5
 
@@ -41,10 +41,10 @@
 
 
 // SD Card SPI Pins
-#define SD_SCK 19
-#define SD_MISO 21//correct
-#define SD_MOSI 3//23
-#define SD_CS 23//18
+#define SD_SCK 19 // correct
+#define SD_MISO 21// correct 
+#define SD_MOSI 3//23 rx0
+#define SD_CS 1//18 tx0
 
 // ============================================================================
 // BNO055 REGISTER CONFIGURATION

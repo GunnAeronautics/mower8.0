@@ -59,7 +59,7 @@ void servoSetup(){
     servo3.attach(SERVO3_PIN) == 0 ||
     servo4.attach(SERVO4_PIN) == 0)
     {
-      LedModeError(4, true);
+      // LedModeError(4, true);
     }
 
     Serial.println("Servo Attached");
