@@ -254,6 +254,7 @@ String getDataHeader()
          "Cd,"
          "desired Cd,"
          "Cd error,"
+         "perfectAltDeploy,"
 
          "PredApogee,"
          "airbrake PredApogee,"
@@ -294,6 +295,8 @@ void dataLogging()
       String(dragCoefficient, DATAPRECISION) + ',' +
       String(desiredDragCoef, DATAPRECISION) + ',' +
       String(CdError, DATAPRECISION) + ',' +
+      String((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY, DATAPRECISION) + ',' +
+
       String(predictApogee(integratedAltitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
       String(predictApogee(integratedAltitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
       String(parachuteDeployed * 100) + ',' +
@@ -493,12 +496,12 @@ void appLoop()
   // In TEST_MODE, altitude and altitudeAccel are set by test cases directly.
 #endif
 
-  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0.01, 500, pow(fusedVelo, 2)));
+  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0.01, 100000, pow(fusedVelo, 2)));
   dragCoefficient = clampDouble(0,1,dragCoefficient);//safety for predict apogee
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
-  integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.999+altitudeV580*0.001;
+  integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9992+altitudeV580*0.0008;
   integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.992+newAltitude580*0.008;
   altitude = newAltitude580;
   // if ((flightState>1)&&(flightState < 4)){
@@ -780,9 +783,17 @@ void appLoop()
       {
         airbrakeAngle += 2;
       }
-      else
+      else if (abs(CdError) > 0.0005)
       {
         airbrakeAngle += 1;
+      }
+      else if (abs(CdError) > 0.00025)
+      {
+        airbrakeAngle += 0.5;
+      }
+      else
+      {
+        airbrakeAngle += 0.25;
       }
     }
     else
@@ -799,14 +810,23 @@ void appLoop()
       {
         airbrakeAngle -= 2;
       }
-      else
+      else if (abs(CdError) > 0.0005)
       {
         airbrakeAngle -= 1;
       }
+      else if (abs(CdError) > 0.00025)
+      {
+        airbrakeAngle -= 0.5;
+      }
+      else
+      {
+        airbrakeAngle -= 0.25;
+      }
+
     }
 
-    airbrakeAngle = clampInt(10, 180, airbrakeAngle);
-    moveFlaps(airbrakeAngle);
+    airbrakeAngle = clampDouble(10.0, 180.0, airbrakeAngle);
+    moveFlaps((int)round(airbrakeAngle));
 
     break;
 #pragma endregion
