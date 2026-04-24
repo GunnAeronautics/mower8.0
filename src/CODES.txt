@@ -1,10 +1,12 @@
 Solid Green is Rocket Is In AIR
 
-Blinking Green is Rocket Is Armed And READY
+Blinking Green is Rocket Is READY
+
+RGB Scrolling is Rocket Is Armed and READY
 
 Solid Orange is pre-Startup / Servo testing
 
-Blinking Blue is Rocket Is Arming (after pre Startup)
+Blinking Blue is Rocket Is Arming (after pre Startup) / CONFIG Mode
 
 Solid Red on left light means Fatal error, the right led will indicate error
 

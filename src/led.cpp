@@ -7,9 +7,12 @@ int currentMode = LED_MODE_PRE_STARTUP;
 bool blink = false;
 bool errorBlink = false;
 bool isFatalError = false;
-int blinkrate = 500;
+bool rgb = false;
+int blinkrate = 0;
+long lastErrorTime = 0;
 long timeElapsed1 = 0;
 long lastTime = 0;
+long lastTime1 = 0;
 int lastErrorCode = 0;
 int currentBlinkColor_r = 0, currentBlinkColor_g = 0, currentBlinkColor_b = 0;
 int score = 0;
@@ -17,6 +20,12 @@ bool scoring = false;
 int altitude1 = 0;
 
 int score10s = 0, score1s = 0, altitude10s = 0, altitude1s = 0;
+
+// rgb components
+
+unsigned int red = 255;
+unsigned int green = 0;
+unsigned int blue = 0;
 
 Adafruit_NeoPixel pixels(NUMPIXELS, Led_Pin, NEO_GRB + NEO_KHZ800);
 // Led 1 and 2
@@ -65,6 +74,7 @@ void LedMode(int mode)
     {
     case LED_MODE_PRE_STARTUP:
         blink = true;
+        pixels.setBrightness(255);
         setLEDColor(255, 165, 0);
         break;
 
@@ -74,20 +84,31 @@ void LedMode(int mode)
         currentBlinkColor_r = 0;
         currentBlinkColor_g = 0;
         currentBlinkColor_b = 255;
+        pixels.setBrightness(255);
         setLEDColor(0, 0, 255);
         break;
 
-    case LED_MODE_ARMED_READY:
+    case LED_MODE_READY:
         blink = true;
         blinkrate = 300;
         currentBlinkColor_r = 0;
         currentBlinkColor_g = 255;
         currentBlinkColor_b = 0;
+        pixels.setBrightness(255);
         setLEDColor(0, 255, 0);
         break;
 
-    case LED_MODE_IN_AIR:
+    case LED_MODE_ARMED_READY:
         blink = false;
+        rgb = true;
+        setLEDColor(50, 50, 50);
+        pixels.setBrightness(255);
+        break;
+
+    case LED_MODE_IN_AIR:
+        rgb = false;
+        blink = false;
+        pixels.setBrightness(50);
         setLEDColor(0, 255, 0);
         break;
 
@@ -95,6 +116,7 @@ void LedMode(int mode)
         blink = false;
         errorBlink = true;
         isFatalError = true;
+        pixels.setBrightness(255);
         setLED0Color(255, 0, 0);
         setLED1Color(0, 0, 0);
         break;
@@ -103,6 +125,7 @@ void LedMode(int mode)
         blink = false;
         errorBlink = true;
         isFatalError = false;
+        pixels.setBrightness(255);
         setLED0Color(0, 0, 255);
         setLED1Color(0, 0, 0);
         break;
@@ -185,9 +208,47 @@ void ledLoop(long timeElapsed1)
             setLED1Color(0, 0, 0);
             delay(300);
         }
+        if (timeElapsed1 - lastErrorTime >= errorONTime)
+        {
+            errorBlink = false;
+        }
+    }
+    else if (rgb && timeElapsed1 - lastTime1 >= blinkratergb)
+    {
 
-        errorBlink = false;
-        delay(3000);
+        if (red == 255 && green < 255 && blue == 0)
+        {
+            green++;
+        }
+        else if (green == 255 && red > 0 && blue == 0)
+        {
+            red--;
+        }
+        else if (green == 255 && blue < 255 && red == 0)
+        {
+            blue++;
+        }
+        else if (blue == 255 && green > 0 && red == 0)
+        {
+            green--;
+        }
+        else if (blue == 255 && red < 255 && green == 0)
+        {
+            red++;
+        }
+        else if (red == 255 && blue > 0 && green == 0)
+        {
+            blue--;
+        }
+        else
+        {
+            red = 255;
+            green = 0;
+            blue = 0;
+        }
+
+        setLEDColor(red, green, blue);
+        lastTime1 = timeElapsed1;
     }
     else if (scoring)
     {

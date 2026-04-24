@@ -20,7 +20,9 @@
 #include "headers/sensors/imu.h"
 #include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
-// #include "headers/utils/led.h"
+#include "headers/utils/led.h"
+
+#include "esp_partition.h"
 #endif
 
 // Last tuned before 2nd launch 3/22/25 pls don't make the servo horns slip or
@@ -49,7 +51,7 @@ bool parachuteDeployed = false;
 bool lastDragFlapDeployed = false;
 
 // flight enable button
-// bool loopEnabled = false;
+bool loopEnabled = false;
 
 bool alreadyPushedData = false;
 // States & triggers
@@ -182,7 +184,7 @@ float prediction;
 float mid;
 float inverseApogee(float alt, float desiredApogee, float v)
 { // Working & Tested not any ore
-  
+
   searchRangeH = 0.1;
   searchRangeL = 0; // SEARCH RANGE IS 0<m<1
   ;
@@ -320,19 +322,20 @@ double baroAltitudeZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 double velocityZero[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int zeroIndex = 0;
-void warn(){
-  for (int i = 0; i < 3; i++){
-      openOpenFlap();
-      digitalWrite(2, HIGH);
+void warn()
+{
+  for (int i = 0; i < 3; i++)
+  {
+    openOpenFlap();
+    digitalWrite(2, HIGH);
 
-      delay(500);
-      closeCloseFlap();
-      digitalWrite(2, LOW);
+    delay(500);
+    closeCloseFlap();
+    digitalWrite(2, LOW);
 
-      delay(500);
-    }
+    delay(500);
+  }
   delay(500);
-
 }
 void appSetup()
 {
@@ -344,6 +347,9 @@ void appSetup()
   Serial.println("Serial Begin");
   pinMode(2, OUTPUT); // blue LED
 
+  //config time over indicator
+  byte data[2] = {0x20, 0x02};
+  Serial.write(data, sizeof(data));
   Wire.begin(ADXL343_SDA, ADXL343_SCL);
   Wire.setClock(100000);
   bnoSetup();
@@ -357,30 +363,30 @@ void appSetup()
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
 
-  // setupLED();
-  // LedMode(LED_MODE_PRE_STARTUP);
+  setupLED();
+  LedMode(LED_MODE_PRE_STARTUP);
   servoSetup();
-  // LedMode(LED_MODE_ARMING);
+  LedMode(LED_MODE_ARMING);
   Serial.println("Starting sd setup, expect garbled text\n");
   Serial.end();
 
-  if (!sdSetup()){
-    warn(); 
-    // LedModeError(5, true);
+  if (!sdSetup())
+  {
+    warn();
+    LedModeError(5, true);
   }
   logData(getDataHeader());
 
   Serial.begin(115200);
-  #endif
+#endif
 
   detachFlaps();
-  Serial.println("start");
-
+  Serial.println("start \nAwaiting Start Signal...");
 
   delay(1000);
-  if (flightState != 0){
+  if (flightState != 0)
+  {
     digitalWrite(2, HIGH);
-
   }
   delay(1000);
   delay(3000);
@@ -395,19 +401,20 @@ void appSetup()
     delay(100);
   }
 
-  // LedMode(LED_MODE_ARMED_READY);
+  LedMode(LED_MODE_READY);
 
-  // pinMode(FLIGHTENPIN, INPUT_PULLDOWN);
+  pinMode(FLIGHTENPIN, INPUT_PULLDOWN);
 
-  // while(!loopEnabled) {
-  //   if (digitalRead(FLIGHTENPIN) == HIGH) {
-  //     loopEnabled = true;
-  //     pinMode(FLIGHTENPIN, OUTPUT);
-  //   }
-  //   delay(100);
-  // }
+  while(!loopEnabled) {
+    if (digitalRead(FLIGHTENPIN) == HIGH) {
+      loopEnabled = true;
+      clearLED();
+      LedMode(LED_MODE_ARMED_READY);
 
-
+      pinMode(FLIGHTENPIN, OUTPUT);
+    }
+    delay(100);
+  }
 }
 
 int paraDeployTime = 0;
@@ -415,32 +422,36 @@ void downwardLogic()
 {
   // function of altitude and function of altitude for optimal parachute deployment intercept
   // the logic just works out :D
-  if (!parachuteDeployed){
-  if ((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY >
-      altitude)
+  if (!parachuteDeployed)
   {
+    if ((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY >
+        altitude)
+    {
 
-    deployChute();
-    parachuteDeployed = true;
-  }
-  // safety
-  // if the rocket is under 15 meters in the air deploy asap
-  if (altitude < 20.0)
-  {
+      deployChute();
+      parachuteDeployed = true;
+    }
+    // safety
+    // if the rocket is under 15 meters in the air deploy asap
+    if (altitude < 20.0)
+    {
 
-    deployChute();
-    parachuteDeployed = true;
+      deployChute();
+      parachuteDeployed = true;
+    }
   }
-  }
-  else{//jiggle physics = on prevents tangling on servo
-    if (timeElapsed % 600 > 200){
+  else
+  { // jiggle physics = on prevents tangling on servo
+    if (timeElapsed % 600 > 200)
+    {
       deployChute();
     }
-    else{
+    else
+    {
       undeployChute();
     }
   }
-  
+
   if (parachuteDeployed == false)
   {
     paraDeployTime = millis();
@@ -492,8 +503,8 @@ void appLoop()
   altitudeProcessing(deltaT);
   getADXLData();
   IMUdata(deltaT);
-  // ledLoop(timeElapsed);
-  
+  ledLoop(timeElapsed);
+
 #endif
   // if (accelerometerTime){
   //   altitude = integratedAltitude;
@@ -502,28 +513,30 @@ void appLoop()
 #ifndef TEST_MODE
 
   // altitudeV = altitudeV580;
-  if ((zenith > 100.0)||(flightState == 0)){
-    #ifdef A1BOARD
+  if ((zenith > 100.0) || (flightState == 0))
+  {
+#ifdef A1BOARD
     altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-    #endif
-    #ifdef A0BOARD
+#endif
+#ifdef A0BOARD
     altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z-") - GRAVITY; // positive is upward and no gravity factored
-    #endif
+#endif
   }
-  else{
-    altitudeAccel =  -yAccel - GRAVITY;
+  else
+  {
+    altitudeAccel = -yAccel - GRAVITY;
   }
-  #else
+#else
   // In TEST_MODE, altitude and altitudeAccel are set by test cases directly.
 #endif
 
   dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0.01, 500, pow(fusedVelo, 2)));
-  dragCoefficient = clampDouble(0,1,dragCoefficient);//safety for predict apogee
+  dragCoefficient = clampDouble(0, 1, dragCoefficient); // safety for predict apogee
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
-  integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.999+altitudeV580*0.001;
-  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.992+newAltitude580*0.008;
+  integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0)) * 0.999 + altitudeV580 * 0.001;
+  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0) * 0.992 + newAltitude580 * 0.008;
   altitude = newAltitude580;
   // if ((flightState>1)&&(flightState < 4)){
   //   altitude = integratedAltitude;
@@ -590,7 +603,7 @@ void appLoop()
     Serial.print(",");
 
     Serial.print("accel: ");
-    Serial.print(altitudeAccel, DATAPRECISION);    
+    Serial.print(altitudeAccel, DATAPRECISION);
     Serial.print(", ");
     Serial.print("zenith: ");
     Serial.print(zenith, DATAPRECISION);
@@ -606,7 +619,7 @@ void appLoop()
     // Serial.print(", ");
 
     Serial.print("inverseApog: ");
-    Serial.print(inverseApogee(integratedAltitude,DESIRED_APOGEE, integratedVelocity), DATAPRECISION);
+    Serial.print(inverseApogee(integratedAltitude, DESIRED_APOGEE, integratedVelocity), DATAPRECISION);
     Serial.print(", ");
     // Serial.print("accelY: ");
     // Serial.print(accelBnoY,DATAPRECISION);
@@ -664,11 +677,11 @@ void appLoop()
       if (flightStateAdvancementTrigger > 3)
       {
         startTimeStamp = millis();
-        // LedMode(LED_MODE_IN_AIR);
+        LedMode(LED_MODE_IN_AIR);
         integratedVelocity = velocityZero[zeroIndex];
         integratedAltitude = altitudeZero[zeroIndex];
         groundAlt = baroAltitudeZero[zeroIndex];
-        attachFlaps();//start flaps
+        attachFlaps(); // start flaps
         Serial.end();
         flightState++;
       }
@@ -860,8 +873,6 @@ void appLoop()
       altitude = altitude;
     }
 
-
-
     downwardLogic();
 
     // checks if the velocity is within 1 & -1 for an extended period of time
@@ -874,11 +885,11 @@ void appLoop()
       timesTheRocketIsStill++;
       if (timesTheRocketIsStill > 30)
       {
-        closeSD(); // close the sd card once and for all
-        detachFlaps();//save power unpowering flaps
-        detachDeploy();//save power unpowering flaps
+        closeSD();      // close the sd card once and for all
+        detachFlaps();  // save power unpowering flaps
+        detachDeploy(); // save power unpowering flaps
         flightState++;
-        // ledScoring(maxAltitude, timeElapsed); // start scoring
+        ledScoring(maxAltitude, timeElapsed); // start scoring
         if (!alreadyPushedData)
         {
           alreadyPushedData = true;
