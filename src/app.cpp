@@ -50,7 +50,7 @@ bool lastDragFlapDeployed = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
+int flightState = 0;                   // state of the rocket's control
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -387,6 +387,11 @@ void appSetup()
 
     delay(100);
   }
+
+  if (flightState == 0){
+    attachFlaps();//start flaps
+
+  }
 }
 
 int paraDeployTime = 0;
@@ -527,16 +532,22 @@ void appLoop()
   case 0: // happy data printing mode
     fusedVelo = integratedVelocity;
     dataLogging();
+    openOpenSD();
+    dataLogging();
+
 
 #pragma region
     // dataLogging();
     // desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
-    // if (timeElapsed % 600 > 200){
-    //   deployChute();
-    // }
-    // else{
-    //   undeployChute();
-    // }
+    if (timeElapsed % 1000 > 500){
+      openOpenFlap();
+      // deployChute();
+    }
+    else{
+      closeCloseFlap();
+
+      // undeployChute();
+    }
 
     Serial.print(">");
     Serial.print("DeltaT: ");

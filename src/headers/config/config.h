@@ -86,7 +86,7 @@
 #define COEF_DRAG_FLAPUNDEPLOYED 0.0020 // accelY / v / v of the rocket when flaps fully deployed
 
 // Servo deployment angles
-#define DRAG_FLAPS_DEPLOYED_ANGLE 180
+#define DRAG_FLAPS_DEPLOYED_ANGLE 155
 #define DRAG_FLAPS_UNDEPLOYED_ANGLE 10
 //in ms
 #define DRAG_FLAP_MOVE_TIME 500
