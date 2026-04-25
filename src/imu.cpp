@@ -195,9 +195,9 @@ void bnoSetup()
 
     // imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
     // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
-    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     // imu::Vector<3> linAccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-
+    
     // imu::Vector<3> mag = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
   
     // imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -224,7 +224,7 @@ void bnoSetup()
   
     #ifdef A0BOARD
     zenith = angleBetweenAxis(bnoOrientation,"Y-");
-    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z-");
+    // zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z-");
 
     #endif
     #ifdef A1BOARD
@@ -241,9 +241,10 @@ void bnoSetup()
     // MagY = mag.y();
     // MagZ = mag.z();
 
-    accelBnoX = accel.x();
-    accelBnoY = accel.y();//put negative side if servos are on top
+    // accelBnoX = accel.x();
+    // accelBnoY = accel.y();//put negative side if servos are on top
     // accelBnoZ = accel.z();
+    
     // accelBnoLinearX = linAccel.x();
     // accelBnoLinearY = linAccel.y();
     // accelBnoLinearZ = linAccel.z();
