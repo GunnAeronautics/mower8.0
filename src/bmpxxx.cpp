@@ -60,9 +60,9 @@ void baroSetup()
   Serial.println("BMP580 sensor found!");
   }
 
-  bmp581.setPressureOversampling(BMP5XX_OVERSAMPLING_16X);
-  bmp581.setIIRFilterCoeff(BMP5XX_IIR_FILTER_COEFF_3);
-  bmp581.setOutputDataRate(BMP5XX_ODR_100_2_HZ);
+  bmp581.setPressureOversampling(BMP5XX_OVERSAMPLING_4X);
+  bmp581.setIIRFilterCoeff(BMP5XX_IIR_FILTER_COEFF_1);
+  bmp581.setOutputDataRate(BMP5XX_ODR_218_5_HZ);
   bmp581.setPowerMode(BMP5XX_POWERMODE_NORMAL);
 
 
