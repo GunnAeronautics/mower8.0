@@ -101,6 +101,7 @@
 // ============================================================================
 // DATA LOGGING
 // ============================================================================
+#define SLOWBARO false
 
 #define MAX_STRING_SIZE 300
 #define DATAPRECISION 4  // decimals for SD card printing
