@@ -57,6 +57,7 @@ bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
 int flightState = 0;                   // state of the rocket's control
+bool logSD = true;
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -90,6 +91,14 @@ float lastGoodAltitude = 0;
 float lastAltitude = 0;
 float secondLastAltitude = 0;
 
+long int TimeStuffT = 0;//used to track timings of stuff
+long int SDT = 0;//time it takes for SD to do it's thing logging
+long int BaroT = 0;
+long int AltProcessT = 0;
+long int ADXLT = 0;
+long int IMUT = 0;
+long int RandomCalculationsT = 0;
+
 #ifdef TEST_MODE
 // Provide hardware variants typically defined in other modules
 double altitude580 = 0.0;
@@ -119,7 +128,7 @@ void timeStuff()
     return;
 
   // arbitrary delay
-  while (micros() - lastT < 7000)
+  while (micros() - lastT < 5000)
   {
     delayMicroseconds(1);
   }
@@ -242,6 +251,8 @@ String getDataHeader()
 {
   // String datalogHeader =
   return "timeElapsed,"
+         "deltaT,"
+
          "Pressure,"
          "Temp,"
 
@@ -287,6 +298,8 @@ void dataLogging()
 {
   String dataString =
       String(timeElapsed) + ',' +
+      String(deltaT) + ',' +
+
       String(getBaroData_BMP580_pressure(), DATAPRECISION) + ',' +
       String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +
       String(altitude, DATAPRECISION) + ',' +
@@ -300,7 +313,7 @@ void dataLogging()
       String(-yAccel - GRAVITY, DATAPRECISION) + ',' +
       String(dragCoefficient, DATAPRECISION) + ',' +
       String(desiredDragCoef, DATAPRECISION) + ',' +
-      String(CdError, DATAPRECISION) + ',' +
+      String(CdError, DATAPRECISION+3) + ',' +
       String((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY, DATAPRECISION) + ',' +
 
       String(predictApogee(integratedAltitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
@@ -366,21 +379,29 @@ void appSetup()
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
 
-  setupLED();
-  LedMode(LED_MODE_PRE_STARTUP);
-  servoSetup();
-  LedMode(LED_MODE_ARMING);
-  Serial.println("Starting sd setup, expect garbled text\n");
   Serial.end();
-
   if (!sdSetup())
   {
     warn();
     LedModeError(5, true);
+
+    Serial.println("NO SD CARD VERY BAD");
+  }
+  else{
+    Serial.println("SD INITIALIZED pretty good");
+
+  }
+  if (!logSD){
+    Serial.begin(115200);
+
   }
   logData(getDataHeader());
 
-  Serial.begin(115200);
+
+  setupLED();
+  LedMode(LED_MODE_PRE_STARTUP);
+  servoSetup();
+  LedMode(LED_MODE_ARMING);
 #endif
 
   detachFlaps();
@@ -393,7 +414,6 @@ void appSetup()
   }
   delay(1000);
   delay(3000);
-  lastT = micros();
 
   for (int i = 0; i < 10; i++)
   {
@@ -416,6 +436,8 @@ void appSetup()
   while(!loopEnabled) {
     if (digitalRead(FLIGHTENPIN) == HIGH) {
       loopEnabled = true;
+      // Serial.begin(115200);
+      lastT = micros();
       clearLED();
       LedMode(LED_MODE_ARMED_READY);
 
@@ -503,16 +525,22 @@ int lastDeployTime = 0;
 float ejectionTimes = 0;
 bool ejected = false;
 
+
 void appLoop()
 {
 #ifndef TEST_MODE
-  timeStuff();
-  baroDataRead();
-  altitudeProcessing(deltaT);
-  getADXLData();
-  IMUdata(deltaT);
-  ledLoop(timeElapsed);
+  IMUT = micros();
+  if (SDT < 3000){//because every ~20 cycles the deltaT jumps to 10 because the sd is flushing or something
+    IMUdata(deltaT);//we don't read IMU data to reduce ms from ~14 to 1
+  }
+  IMUT = IMUT - micros();
 
+  TimeStuffT = micros();    timeStuff();                  TimeStuffT = micros() - TimeStuffT;
+  BaroT = micros();         baroDataRead();               BaroT = micros() - BaroT;
+  AltProcessT = micros();   altitudeProcessing(deltaT);   AltProcessT = micros() - AltProcessT;
+  ADXLT = micros();         getADXLData();                ADXLT = micros() - ADXLT;
+  // ledLoop(timeElapsed);
+  RandomCalculationsT = micros();
 #endif
   // if (accelerometerTime){
   //   altitude = integratedAltitude;
@@ -530,8 +558,7 @@ void appLoop()
     altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z-") - GRAVITY; // positive is upward and no gravity factored
 #endif
   }
-  else
-  {
+  else{
     altitudeAccel = -yAccel - GRAVITY;
   }
 #else
@@ -546,6 +573,8 @@ void appLoop()
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9992+altitudeV580*0.0008;
   integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.992+newAltitude580*0.008;
   altitude = newAltitude580;
+
+
   // if ((flightState>1)&&(flightState < 4)){
   //   altitude = integratedAltitude;
 
@@ -562,36 +591,60 @@ void appLoop()
   delay(1000); // you only want a delay because serial printing is gets bogged
                // down
 #endif
-
+ 
   // main control things
   switch (flightState)
   {
   case 0: // happy data printing mode
     fusedVelo = integratedVelocity;
-    Serial.end();
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    RandomCalculationsT = micros()-RandomCalculationsT;
+
+    SDT = micros();
     dataLogging();
-    openOpenSD();
-    dataLogging();
+    SDT = micros()-SDT;
+    if (timeElapsed > 30000){
+      closeSD();
+      openOpenSD();
+
+    }
 
 
 #pragma region
-    // dataLogging();
-    // desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
-    if (timeElapsed % 1000 > 500){
-      openOpenFlap();
-      // deployChute();
-    }
-    else{
-      closeCloseFlap();
+    // // dataLogging();
+    // // desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    // if (timeElapsed % 1000 > 500){
+    //   openOpenFlap();
+    //   // deployChute();
+    // }
+    // else{
+    //   closeCloseFlap();
 
-      // undeployChute();
-    }
+    //   // undeployChute();
+    // }
 
     Serial.print(">");
-    Serial.print("DeltaT: ");
-    Serial.print(deltaT);
+    Serial.print("TimeStuffT: ");
+    Serial.print(TimeStuffT);
     Serial.print(", ");
-
+    Serial.print("SDT: ");
+    Serial.print(SDT);
+    Serial.print(", ");
+    Serial.print("BaroT: ");
+    Serial.print(BaroT);
+    Serial.print(", ");
+    Serial.print("AltProcessT: ");
+    Serial.print(AltProcessT);
+    Serial.print(", ");
+    Serial.print("ADXLT: ");
+    Serial.print(ADXLT);
+    Serial.print(", ");
+    Serial.print("IMUT: ");
+    Serial.print(IMUT);
+    Serial.print(", ");
+    Serial.print("RandomCalculationsT: ");
+    Serial.print(RandomCalculationsT);
+    Serial.print(", ");
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
     // // Serial.print(", ");
@@ -599,12 +652,12 @@ void appLoop()
     // Serial.print(getGroundPressure(),DATAPRECISION);
     // Serial.print(", ");
 
-    Serial.print("BaroAlt: ");
-    Serial.print(newAltitude580, DATAPRECISION);
-    Serial.print(", ");
-    Serial.print("intAlt: ");
-    Serial.print(integratedAltitude, DATAPRECISION);
-    Serial.print(", ");
+    // Serial.print("BaroAlt: ");
+    // Serial.print(newAltitude580, DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("intAlt: ");
+    // Serial.print(integratedAltitude, DATAPRECISION);
+    // Serial.print(", ");
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
     // // Serial.print(", ");
@@ -612,19 +665,19 @@ void appLoop()
     // Serial.print(altitudeV390,DATAPRECISION);
     // Serial.print(", ");
 
-    Serial.print("fusedVelo: ");
-    Serial.print(fusedVelo, DATAPRECISION);
-    Serial.print(",");
+    // Serial.print("fusedVelo: ");
+    // Serial.print(fusedVelo, DATAPRECISION);
+    // Serial.print(",");
 
-    Serial.print("accel: ");
-    Serial.print(altitudeAccel, DATAPRECISION);
-    Serial.print(", ");
-    Serial.print("zenith: ");
-    Serial.print(zenith, DATAPRECISION);
-    Serial.print(", ");
-    Serial.print("dragCoef: ");
-    Serial.print(dragCoefficient, DATAPRECISION);
-    Serial.print(", ");
+    // Serial.print("accel: ");
+    // Serial.print(altitudeAccel, DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("zenith: ");
+    // Serial.print(zenith, DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("dragCoef: ");
+    // Serial.print(dragCoefficient, DATAPRECISION);
+    // Serial.print(", ");
     // Serial.print("target: ");
     // Serial.print(desiredDragCoef, DATAPRECISION);
     // Serial.print(", ");
@@ -632,9 +685,9 @@ void appLoop()
     // Serial.print(predictApogee(integratedAltitude,fusedVelo,dragCoefficient), DATAPRECISION);
     // Serial.print(", ");
 
-    Serial.print("inverseApog: ");
-    Serial.print(inverseApogee(integratedAltitude, DESIRED_APOGEE, integratedVelocity), DATAPRECISION);
-    Serial.print(", ");
+    // Serial.print("inverseApog: ");
+    // Serial.print(inverseApogee(integratedAltitude, DESIRED_APOGEE, integratedVelocity), DATAPRECISION);
+    // Serial.print(", ");
     // Serial.print("accelY: ");
     // Serial.print(accelBnoY,DATAPRECISION);
     // Serial.print(", ");
@@ -709,7 +762,9 @@ void appLoop()
   case 2: // Ascent/Burnout
 #pragma region
 
+    SDT = micros();
     dataLogging();
+    SDT = micros()-SDT;
 #ifdef TEST_MODE
     fusedVelo = altitudeV580;
 #else
@@ -738,7 +793,9 @@ void appLoop()
   case 3: // coast up
 #pragma region
 
+    SDT = micros();
     dataLogging();
+    SDT = micros()-SDT;
 
     // shitty homebrew "filter"
 #ifdef TEST_MODE
@@ -761,7 +818,7 @@ void appLoop()
         flightStateAdvancementTrigger = 0;
         closeSD(); // writes to sd card cuz the hard times are over
         openOpenSD();
-
+        SDT = 0;
         closeCloseFlap(); // stows the airbrakes
         // detach();
       }
@@ -773,6 +830,8 @@ void appLoop()
     }
 
     // SAFETY CODE
+    #pragma region
+
     //_____________________________________________________________________________________________________________
     // if we are above the desired altitude deploy the flaps (very simple logic)
     if (altitude > DESIRED_APOGEE)
@@ -793,6 +852,7 @@ void appLoop()
     // if we ever need to rely on this we're probably cooked
     // this is just here to save a few points
     //_____________________________________________________________________________________________________________
+    #pragma endregion
 
     // //stuff right after burnout
     // if (timeElapsedSinceBurnout > 2000)
@@ -802,7 +862,8 @@ void appLoop()
     // }
     // else if (timeElapsedSinceBurnout < 2000)
     //   {openOpenFlap();break;}
-    // simple code vv
+    
+    // oneshot code vv
     // //if the predicted apogee at a certain point with the airbrakes deployed is more than the desired apogee
     // //it would make sense to deploy the airbrakes NOW! so we don't loose more points
     // if (predictApogee(altitude, integratedVelocity, COEF_DRAG_FLAPDEPLOYED) > 228.6)
@@ -818,7 +879,6 @@ void appLoop()
     // }
 
     // advanced code vvv
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
     if (desiredDragCoef > dragCoefficient)
     {
       if (abs(CdError) > 0.0050)
@@ -875,7 +935,7 @@ void appLoop()
 
     }
 
-    airbrakeAngle = clampDouble(10.0, 180.0, airbrakeAngle);
+    airbrakeAngle = clampDouble(DRAG_FLAPS_UNDEPLOYED_ANGLE, DRAG_FLAPS_DEPLOYED_ANGLE, airbrakeAngle);
     moveFlaps((int)round(airbrakeAngle));
 
     break;
@@ -939,11 +999,6 @@ void appLoop()
     digitalWrite(2, HIGH);
     delay(10);
     digitalWrite(2, LOW);
-
-    // Serial.println("We Done ");
-    // Serial.print("maxAlt: ");
-    // Serial.print(maxAltitude);
-    // Serial.println();
 
     break;
   } // end of switch cases
