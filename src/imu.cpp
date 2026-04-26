@@ -248,7 +248,7 @@ void bnoSetup()
     #endif
     #ifdef A4BOARD
     zenith = angleBetweenAxis(bnoOrientation,"Y-");
-    // zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
 
     #endif
 

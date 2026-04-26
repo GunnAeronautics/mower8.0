@@ -750,6 +750,8 @@ void appLoop()
   case 1: // pad
 #pragma region
     fusedVelo = altitudeV580;
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+
     Serial.print("Waiting on Pad");
     Serial.print("Accel: ");
     Serial.print(altitudeAccel);
@@ -801,10 +803,13 @@ void appLoop()
     SDT = micros();
     dataLogging();
     SDT = micros()-SDT;
+
 #ifdef TEST_MODE
     fusedVelo = altitudeV580;
 #else
     fusedVelo = integratedVelocity;
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+
 #endif
     if (altitudeAccel < 0 || timeElapsed > 2500)
     // warning accel being under 0 does not neccecarily mean that thrust has stopped but it is close enough
@@ -839,6 +844,8 @@ void appLoop()
 #else
     // fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
     fusedVelo = integratedVelocity;
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+
 #endif
     // accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
     // accelTrust = clampDouble(0, 1, accelTrust);
@@ -979,6 +986,8 @@ void appLoop()
   case 4: // we going dow
 #pragma region
     fusedVelo = altitudeV580;
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+
     closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
     openOpenSD();
     dataLogging();
