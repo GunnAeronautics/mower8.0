@@ -57,7 +57,7 @@ bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
 int flightState = 0;                   // state of the rocket's control
-bool logSD = true;
+bool logSD = false;
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -539,7 +539,7 @@ void appLoop()
   BaroT = micros();         baroDataRead();               BaroT = micros() - BaroT;
   AltProcessT = micros();   altitudeProcessing(deltaT);   AltProcessT = micros() - AltProcessT;
   ADXLT = micros();         getADXLData();                ADXLT = micros() - ADXLT;
-  // ledLoop(timeElapsed);
+  ledLoop(timeElapsed);
   RandomCalculationsT = micros();
 #endif
   // if (accelerometerTime){

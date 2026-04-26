@@ -174,7 +174,8 @@ void LedModeError(int code, bool isFatal)
 }
 
 void ledLoop(long timeElapsed1)
-{
+{  
+    Serial.println("kacchan LED LOOP TIME uwu");
     if (errorBlink)
     {
         int digit10s = floor(lastErrorCode / 10);
