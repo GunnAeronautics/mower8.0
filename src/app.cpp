@@ -56,8 +56,8 @@ bool loopEnabled = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 0;                   // state of the rocket's control
-bool logSD = false;
+int flightState = 1;                   // state of the rocket's control
+bool logSD = true;
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -913,60 +913,60 @@ void appLoop()
     //   lastDeployTime = millis();
 
     // }
-
     // advanced code vvv
     if (desiredDragCoef > dragCoefficient)
     {
       if (abs(CdError) > 0.0050)
       {
-        airbrakeAngle += 5;
+        airbrakeAngle += 3.5;
       }
       else if (abs(CdError) > 0.0030)
       {
-        airbrakeAngle += 3;
+        airbrakeAngle += 2;
       }
       else if (abs(CdError) > 0.0010)
       {
-        airbrakeAngle += 2;
+        airbrakeAngle += 1.5;
       }
       else if (abs(CdError) > 0.0005)
       {
-        airbrakeAngle += 1;
+        airbrakeAngle += 0.75;
       }
       else if (abs(CdError) > 0.00025)
       {
-        airbrakeAngle += 0.5;
+        airbrakeAngle += 0.3;
       }
+      
       else
       {
-        airbrakeAngle += 0.25;
+        airbrakeAngle += 0.2;
       }
     }
     else
     {
       if (abs(CdError) > 0.0050)
       {
-        airbrakeAngle -= 5;
+        airbrakeAngle -= 3.5;
       }
       else if (abs(CdError) > 0.0030)
       {
-        airbrakeAngle -= 3;
+        airbrakeAngle -= 2;
       }
       else if (abs(CdError) > 0.0010)
       {
-        airbrakeAngle -= 2;
+        airbrakeAngle -= 1.5;
       }
       else if (abs(CdError) > 0.0005)
       {
-        airbrakeAngle -= 1;
+        airbrakeAngle -= 0.75;
       }
       else if (abs(CdError) > 0.00025)
       {
-        airbrakeAngle -= 0.5;
+        airbrakeAngle -= 0.3;
       }
       else
       {
-        airbrakeAngle -= 0.25;
+        airbrakeAngle -= 0.2;
       }
 
     }
