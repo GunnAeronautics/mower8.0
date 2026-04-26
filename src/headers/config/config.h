@@ -74,7 +74,7 @@
 // #define DESIRED_APOGEE 228.6  //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 // #define DESIRED_APOGEE 220.98//725 feet
 // #define DESIRED_APOGEE 236.22//775 feet
-#define DESIRED_APOGEE 223.1  //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+#define DESIRED_APOGEE 220.97 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 
 //6.5 765
 //2.5 756
@@ -84,7 +84,7 @@
 // Parachute and drag flap configuration
 // #define PARACHUTE_TERM_VELOCITY 6.5 // m/s
 // #define PARACHUTE_TERM_VELOCITY 6.1//spill hole // m/s real // old = 6.65, new = 5.600991463
-#define PARACHUTE_TERM_VELOCITY 5.7 // m/s real // old = 6.65, new = 5.600991463
+#define PARACHUTE_TERM_VELOCITY 6.55 // m/s real // old = 6.65, new = 5.600991463
 
 //6.31 works with 3 to 6mph wind 610 G
 //5.56 13 mph ~610

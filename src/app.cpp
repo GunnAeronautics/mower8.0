@@ -925,55 +925,55 @@ void appLoop()
     {
       if (abs(CdError) > 0.0050)
       {
-        airbrakeAngle += 3.5;
+        airbrakeAngle += 4;
       }
       else if (abs(CdError) > 0.0030)
       {
-        airbrakeAngle += 2;
+        airbrakeAngle += 3;
       }
       else if (abs(CdError) > 0.0010)
       {
-        airbrakeAngle += 1.5;
+        airbrakeAngle += 2;
       }
       else if (abs(CdError) > 0.0005)
       {
-        airbrakeAngle += 0.75;
+        airbrakeAngle += 1;
       }
-      else if (abs(CdError) > 0.00025)
+      else if (abs(CdError) > 0.0003)
       {
-        airbrakeAngle += 0.3;
+        airbrakeAngle += 0.5;
       }
       
       else
       {
-        airbrakeAngle += 0.2;
+        airbrakeAngle += 0.3;
       }
     }
     else
     {
       if (abs(CdError) > 0.0050)
       {
-        airbrakeAngle -= 3.5;
+        airbrakeAngle -= 4;
       }
       else if (abs(CdError) > 0.0030)
       {
-        airbrakeAngle -= 2;
+        airbrakeAngle -= 3;
       }
       else if (abs(CdError) > 0.0010)
       {
-        airbrakeAngle -= 1.5;
+        airbrakeAngle -= 2;
       }
       else if (abs(CdError) > 0.0005)
       {
-        airbrakeAngle -= 0.75;
+        airbrakeAngle -= 1;
       }
-      else if (abs(CdError) > 0.00025)
+      else if (abs(CdError) > 0.0003)
       {
-        airbrakeAngle -= 0.3;
+        airbrakeAngle -= 0.5;
       }
       else
       {
-        airbrakeAngle -= 0.2;
+        airbrakeAngle -= 0.3;
       }
 
     }
