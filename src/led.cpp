@@ -24,7 +24,9 @@ int score10s = 0, score1s = 0, altitude10s = 0, altitude1s = 0;
 // rgb components
 float hue = 0.0f;
 int direction = 1;
-float r, g, b;
+float r = 255.0;
+float g = 0.0;
+float b = 0.0;
 
 Adafruit_NeoPixel pixels(NUMPIXELS, Led_Pin, NEO_GRB + NEO_KHZ800);
 // Led 1 and 2
@@ -171,6 +173,10 @@ void LedModeError(int code, bool isFatal)
         LedMode(LED_MODE_NONFATAL_ERROR);
     }
 }
+float h = 0;   // 0–360
+float s = 1;   // full color
+float v = 1;   // brightness from 0 to 1
+float speed = 0.7;   // full brightness
 
 void ledLoop(long timeElapsed1)
 {
@@ -212,55 +218,28 @@ void ledLoop(long timeElapsed1)
             errorBlink = false;
         }
     }
-    else if (rgb && timeElapsed1 - lastTime1 >= blinkratergb)
+    else if (rgb)
     {
-        hue += 1.0f * rgbChange * direction;
-        if (hue >= 360.0f)
-            hue -= 360.0f;
-        if (hue < 0.0f)
-            hue += 360.0f;
+        h += speed;          // slow color shift
+        if (h >= 360) h = 0;
 
-        int hi = int(hue / 60.0f) % 6;
-        float f = (hue / 60.0f) - hi;
-        float p = 0.0f;
-        float q = 1.0f - f;
-        float t = f;
+        float c = v * s;
+        float x = c * (1 - abs(fmod(h / 60.0, 2) - 1));
+        float m = v - c;
 
-        switch (hi)
-        {
-        case 0:
-            r = 1;
-            g = t;
-            b = p;
-            break;
-        case 1:
-            r = q;
-            g = 1;
-            b = p;
-            break;
-        case 2:
-            r = p;
-            g = 1;
-            b = t;
-            break;
-        case 3:
-            r = p;
-            g = q;
-            b = 1;
-            break;
-        case 4:
-            r = t;
-            g = p;
-            b = 1;
-            break;
-        case 5:
-            r = 1;
-            g = p;
-            b = q;
-            break;
-        }
+        float r, g, b;
 
-        setLEDColor(r, g, b);
+        if (h < 60)       { r = c; g = x; b = 0; }
+        else if (h < 120) { r = x; g = c; b = 0; }
+        else if (h < 180) { r = 0; g = c; b = x; }
+        else if (h < 240) { r = 0; g = x; b = c; }
+        else if (h < 300) { r = x; g = 0; b = c; }
+        else              { r = c; g = 0; b = x; }
+
+        // convert to 0–255 PWM
+        pixels.setBrightness(10);
+
+        setLEDColor((r + m) * 255, (g + m) * 255, (b + m) * 255);
         lastTime1 = timeElapsed1;
     }
     else if (scoring)
