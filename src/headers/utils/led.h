@@ -5,6 +5,7 @@
 
 #define blinkratergb 250 + 1  // level converter has rise fall time of 100ns, the neopixel has polling at 125ns, 
 #define errorONTime 5000
+#define rgbChange 8
 
 // LED Modes
 #define LED_MODE_PRE_STARTUP 0

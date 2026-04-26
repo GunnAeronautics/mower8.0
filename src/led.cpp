@@ -23,6 +23,8 @@ int score10s = 0, score1s = 0, altitude10s = 0, altitude1s = 0;
 
 // rgb components
 
+int phase = 0;
+int direction = 1;
 unsigned int red = 255;
 unsigned int green = 0;
 unsigned int blue = 0;
@@ -174,8 +176,7 @@ void LedModeError(int code, bool isFatal)
 }
 
 void ledLoop(long timeElapsed1)
-{  
-    Serial.println("kacchan LED LOOP TIME uwu");
+{
     if (errorBlink)
     {
         int digit10s = floor(lastErrorCode / 10);
@@ -216,39 +217,41 @@ void ledLoop(long timeElapsed1)
     }
     else if (rgb && timeElapsed1 - lastTime1 >= blinkratergb)
     {
+        switch (phase)
+        {
+        case 0:
+            green += direction;
+            if ((direction == 1 && green == 255) || (direction == -1 && green == 0))
+                phase = 1;
+            break;
+        case 1:
+            red -= direction;
+            if ((direction == 1 && red == 0) || (direction == -1 && red == 255))
+                phase = 2;
+            break;
+        case 2:
+            blue += direction;
+            if ((direction == 1 && blue == 255) || (direction == -1 && blue == 0))
+                phase = 3;
+            break;
+        case 3:
+            green -= direction;
+            if ((direction == 1 && green == 0) || (direction == -1 && green == 255))
+                phase = 4;
+            break;
+        case 4:
+            red += direction;
+            if ((direction == 1 && red == 255) || (direction == -1 && red == 0))
+                phase = 5;
+            break;
+        case 5:
+            blue -= direction;
+            if ((direction == 1 && blue == 0) || (direction == -1 && blue == 255))
+                phase = 0;
+            break;
+        }
 
-        if (red == 255 && green < 255 && blue == 0)
-        {
-            green++;
-        }
-        else if (green == 255 && red > 0 && blue == 0)
-        {
-            red--;
-        }
-        else if (green == 255 && blue < 255 && red == 0)
-        {
-            blue++;
-        }
-        else if (blue == 255 && green > 0 && red == 0)
-        {
-            green--;
-        }
-        else if (blue == 255 && red < 255 && green == 0)
-        {
-            red++;
-        }
-        else if (red == 255 && blue > 0 && green == 0)
-        {
-            blue--;
-        }
-        else
-        {
-            red = 255;
-            green = 0;
-            blue = 0;
-        }
-
-        setLEDColor(red, green, blue);
+        setLEDColor(red * rgbChange, green * rgbChange, blue * rgbChange);
         lastTime1 = timeElapsed1;
     }
     else if (scoring)
