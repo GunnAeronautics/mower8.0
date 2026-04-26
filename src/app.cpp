@@ -586,8 +586,8 @@ void appLoop()
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
 
-  integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9992+altitudeV580*0.0008;
-  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.992+newAltitude580*0.008;
+  integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
+  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.97+newAltitude580*0.03;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
   trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
   altitude = newAltitude580;
@@ -615,7 +615,7 @@ void appLoop()
   {
   case 0: // happy data printing mode
     fusedVelo = integratedVelocity;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*0.05), fusedVelo);
     RandomCalculationsT = micros()-RandomCalculationsT;
 
     SDT = micros();
