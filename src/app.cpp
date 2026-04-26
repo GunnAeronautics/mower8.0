@@ -69,6 +69,9 @@ double desiredDragCoef = 0;
 double airbrakePower = 0;
 double integratedAltitude = 0;
 double integratedVelocity = 0;
+double trueIntegratedAltitude = 0;
+double trueIntegratedVelocity = 0;
+
 double fusedVelo = 0.0;
 float accelTrust = 1.0;
 // KalmanVelocityEstimator kalman(1, 3);
@@ -258,10 +261,14 @@ String getDataHeader()
 
          "Alt,"
          "integratedAlt,"
+         "trueIntAlt,"
+
          "baroAlt580,"
 
          "fusedVelocity,"
          "integratedVelo,"
+         "trueIntegratedVelo,"
+
          "baroVelo,"
 
          "altitudeAccel,"
@@ -304,9 +311,13 @@ void dataLogging()
       String(getBaroData_BMP580_temp(), DATAPRECISION) + ',' +
       String(altitude, DATAPRECISION) + ',' +
       String(integratedAltitude, DATAPRECISION) + ',' +
+      String(trueIntegratedAltitude, DATAPRECISION) + ',' +
+
       String(altitude580, DATAPRECISION) + ',' +
       String(fusedVelo, DATAPRECISION) + ',' +
       String(integratedVelocity, DATAPRECISION) + ',' +
+      String(trueIntegratedVelocity, DATAPRECISION) + ',' +
+
       String(altitudeV580, DATAPRECISION) + ',' +
       String(altitudeAccel, DATAPRECISION) + ',' +
       String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' +
@@ -433,7 +444,7 @@ void appSetup()
   pinMode(FLIGHTENPIN, INPUT_PULLDOWN);
 
   while(!loopEnabled) {
-    if (digitalRead(FLIGHTENPIN) == HIGH) {
+    if (digitalRead(FLIGHTENPIN) == LOW) {
       loopEnabled = true;
       // Serial.begin(115200);
       lastT = micros();
@@ -538,7 +549,7 @@ void appLoop()
   BaroT = micros();         baroDataRead();               BaroT = micros() - BaroT;
   AltProcessT = micros();   altitudeProcessing(deltaT);   AltProcessT = micros() - AltProcessT;
   ADXLT = micros();         getADXLData();                ADXLT = micros() - ADXLT;
-  ledLoop(timeElapsed);
+  // ledLoop(timeElapsed);
   RandomCalculationsT = micros();
 #endif
   // if (accelerometerTime){
@@ -556,6 +567,12 @@ void appLoop()
 #ifdef A0BOARD
     altitudeAccel = axisComponent(getQuat(), xAccel, yAccel, zAccel, "Z-") - GRAVITY; // positive is upward and no gravity factored
 #endif
+#ifdef A3BOARD
+    altitudeAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
+#endif
+#ifdef A4BOARD
+    altitudeAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
+#endif
   }
   else{
     altitudeAccel = -yAccel - GRAVITY;
@@ -571,6 +588,8 @@ void appLoop()
 
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9992+altitudeV580*0.0008;
   integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.992+newAltitude580*0.008;
+  trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
+  trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
   altitude = newAltitude580;
 
 
@@ -600,13 +619,17 @@ void appLoop()
     RandomCalculationsT = micros()-RandomCalculationsT;
 
     SDT = micros();
+    if (logSD){
     dataLogging();
-    SDT = micros()-SDT;
     if (timeElapsed > 30000){
       closeSD();
       openOpenSD();
-
     }
+    }
+
+    SDT = micros()-SDT;
+
+
 
 
 #pragma region
@@ -623,40 +646,46 @@ void appLoop()
     // }
 
     Serial.print(">");
-    Serial.print("TimeStuffT: ");
-    Serial.print(TimeStuffT);
-    Serial.print(", ");
-    Serial.print("SDT: ");
-    Serial.print(SDT);
-    Serial.print(", ");
-    Serial.print("BaroT: ");
-    Serial.print(BaroT);
-    Serial.print(", ");
-    Serial.print("AltProcessT: ");
-    Serial.print(AltProcessT);
-    Serial.print(", ");
-    Serial.print("ADXLT: ");
-    Serial.print(ADXLT);
-    Serial.print(", ");
-    Serial.print("IMUT: ");
-    Serial.print(IMUT);
-    Serial.print(", ");
-    Serial.print("RandomCalculationsT: ");
-    Serial.print(RandomCalculationsT);
-    Serial.print(", ");
+    // Serial.print("TimeStuffT: ");
+    // Serial.print(TimeStuffT);
+    // Serial.print(", ");
+    // Serial.print("SDT: ");
+    // Serial.print(SDT);
+    // Serial.print(", ");
+    // Serial.print("BaroT: ");
+    // Serial.print(BaroT);
+    // Serial.print(", ");
+    // Serial.print("AltProcessT: ");
+    // Serial.print(AltProcessT);
+    // Serial.print(", ");
+    // Serial.print("ADXLT: ");
+    // Serial.print(ADXLT);
+    // Serial.print(", ");
+    // Serial.print("IMUT: ");
+    // Serial.print(IMUT);
+    // Serial.print(", ");
+    // Serial.print("RandomCalculationsT: ");
+    // Serial.print(RandomCalculationsT);
+    // Serial.print(", ");
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
     // // Serial.print(", ");
     // Serial.print("Ground Pres: ");
     // Serial.print(getGroundPressure(),DATAPRECISION);
     // Serial.print(", ");
+    Serial.print("deltaT: ");
+    Serial.print(deltaT);
+    Serial.print(", ");
+    Serial.print("BaroAlt: ");
+    Serial.print(newAltitude580, DATAPRECISION);
+    Serial.print(", ");
+    Serial.print("intAlt: ");
+    Serial.print(integratedAltitude, DATAPRECISION);
+    Serial.print(", ");
+    Serial.print("baroAlt: ");
+    Serial.print(altitudeV580, DATAPRECISION);
+    Serial.print(", ");
 
-    // Serial.print("BaroAlt: ");
-    // Serial.print(newAltitude580, DATAPRECISION);
-    // Serial.print(", ");
-    // Serial.print("intAlt: ");
-    // Serial.print(integratedAltitude, DATAPRECISION);
-    // Serial.print(", ");
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
     // // Serial.print(", ");
@@ -664,12 +693,17 @@ void appLoop()
     // Serial.print(altitudeV390,DATAPRECISION);
     // Serial.print(", ");
 
-    // Serial.print("fusedVelo: ");
-    // Serial.print(fusedVelo, DATAPRECISION);
+    Serial.print("fusedVelo: ");
+    Serial.print(fusedVelo, DATAPRECISION);
+    Serial.print(",");
+    // Serial.print("trueIntegratedVelo: ");
+    // Serial.print(trueIntegratedVelocity, DATAPRECISION);
     // Serial.print(",");
-
-    // Serial.print("accel: ");
-    // Serial.print(altitudeAccel, DATAPRECISION);
+    Serial.print("accel: ");
+    Serial.print(altitudeAccel, DATAPRECISION);
+    Serial.print(", ");
+    // Serial.print("globalZaccel: ");
+    // Serial.print(zGlobalAccel, DATAPRECISION);
     // Serial.print(", ");
     // Serial.print("zenith: ");
     // Serial.print(zenith, DATAPRECISION);
@@ -746,6 +780,9 @@ void appLoop()
         LedMode(LED_MODE_IN_AIR);
         integratedVelocity = velocityZero[zeroIndex];
         integratedAltitude = altitudeZero[zeroIndex];
+        trueIntegratedVelocity = velocityZero[zeroIndex];
+        trueIntegratedAltitude = altitudeZero[zeroIndex];
+
         groundAlt = baroAltitudeZero[zeroIndex];
         attachFlaps(); // start flaps
         Serial.end();
