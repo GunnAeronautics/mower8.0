@@ -11,10 +11,11 @@
 // ============================================================================
 
 // Servo Pins
-#define SERVO_K 26 // 1
-#define SERVO_L 25 // 2
-#define SERVO_M 4 // 3
-#define SERVO_N 18 // 4 120.60 41.4 37.9
+#define SERVO_J9 4 // 1 Duel Deploy - left most pin
+#define SERVO_J7 18 // 2 
+#define SERVO_J6 26 // 3 Airbrakes
+#define SERVO_J5 25 // 4 Airbrakes
+#define SERVO_J4 33 // 5
 
 // BMP581 Barometric Sensor Pins
 #define BMP_SCK 13 //clk // scl
