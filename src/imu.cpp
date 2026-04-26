@@ -5,6 +5,15 @@
 #ifdef A0BOARD
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
 #endif
+#ifdef A3BOARD
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
+#endif
+#ifdef A4BOARD
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
+#endif
+#ifdef A0BOARD
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
+#endif
 #ifdef A1BOARD
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x29, &Wire);
 #endif
@@ -145,7 +154,7 @@ void bnoSetup()
     newOrientation.mult(copy.inverse());
     // angle between vectors formula:
     return radiansToDegrees(acos(newOrientation.k / newOrientation.getLength()));
-    // return orientation
+    // return orientationA0BOARD
   }
   
   
@@ -194,7 +203,7 @@ void bnoSetup()
     // If fakeimu is enabled, generate synthetic (but plausible) IMU values.
 
     // imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     // imu::Vector<3> linAccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
     
@@ -232,6 +241,17 @@ void bnoSetup()
     zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
 
     #endif
+    #ifdef A3BOARD
+    zenith = angleBetweenAxis(bnoOrientation,"Y-");
+    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+
+    #endif
+    #ifdef A4BOARD
+    zenith = angleBetweenAxis(bnoOrientation,"Y-");
+    // zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+
+    #endif
+
     //xGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "X+");
     //yGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Y+");
   
