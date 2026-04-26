@@ -378,6 +378,7 @@ void appSetup()
   Serial.println("Barometric Sensor Setup Complete");
   Serial.println("Ground Pressure " + (String)getGroundPressure());
   Serial.println("Ground Temperature " + (String)getGroundTemp());
+  servoSetup();
 
   Serial.end();
   if (!sdSetup())
@@ -400,7 +401,6 @@ void appSetup()
 
   setupLED();
   LedMode(LED_MODE_PRE_STARTUP);
-  servoSetup();
   LedMode(LED_MODE_ARMING);
 #endif
 
@@ -426,7 +426,6 @@ void appSetup()
 
   if (flightState == 0){
     attachFlaps();//start flaps
-
   }
 
   LedMode(LED_MODE_READY);

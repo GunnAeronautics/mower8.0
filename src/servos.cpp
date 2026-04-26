@@ -23,10 +23,10 @@ int angleToBlink(double power){// scale of 0 to 90
   }
 
 void deployChute(){
-    servo4.write(PARACHUTE_DEPLOYED_ANGLE);//for drag flaps
+    servo1.write(PARACHUTE_DEPLOYED_ANGLE);//for drag flaps
   }
 void undeployChute(){
-    servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);
+    servo1.write(PARACHUTE_UNDEPLOYED_ANGLE);
 }
 //0 to 1
 void moveFlaps(int angle){
@@ -39,7 +39,7 @@ void moveFlaps(int angle){
 }
 
 void attachFlaps(){
-  servo2.attach(SERVO1_PIN);
+  servo2.attach(SERVO2_PIN);
   servo3.attach(SERVO3_PIN);
   // servo1.detach();
 }
@@ -55,13 +55,11 @@ void detachDeploy(){
 
 void servoSetup(){
     // servo1.attach(SERVO1_PIN);
-    if (
-    servo2.attach(SERVO1_PIN) == 0 ||
-    servo3.attach(SERVO3_PIN) == 0 ||
-    servo4.attach(SERVO4_PIN) == 0)
-    {
-      // LedModeError(4, true);
-    }
+    servo1.attach(SERVO1_PIN);
+    servo2.attach(SERVO2_PIN);
+    servo3.attach(SERVO3_PIN);
+
+
 
     Serial.println("Servo Attached");
 
@@ -81,7 +79,7 @@ void servoSetup(){
       // servo4.write(i);
       delay(10);
     }
-    servo4.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
+    servo1.write(PARACHUTE_UNDEPLOYED_ANGLE);//for drag flaps
 
     servo2.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
     servo3.write(DRAG_FLAPS_UNDEPLOYED_ANGLE);
