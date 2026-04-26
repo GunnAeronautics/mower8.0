@@ -45,7 +45,27 @@ extern double zAccel = 0.0;
 // float Y_SCALE = 0.970074;
 // float Z_SCALE = 1.004359;
 
-// new board old adxl (A1)
+// A4
+#ifdef A4BOARD
+double X_OFFSET = -0.254687;
+double Y_OFFSET = 0.203389;
+double Z_OFFSET = -0.280468;
+
+double X_SCALE = 0.970789;
+double Y_SCALE = 0.972270;
+double Z_SCALE = 0.997228;
+#endif
+// A3
+#ifdef A3BOARD
+double X_OFFSET = 0.015293;
+double Y_OFFSET = 0.101786;
+double Z_OFFSET = -0.275167;
+
+double X_SCALE = 0.979278;
+double Y_SCALE = 0.984059;
+double Z_SCALE = 1.000862;
+#endif
+// board old adxl (A1)
 #ifdef A1BOARD
 double X_OFFSET = -0.217711;
 double Y_OFFSET = 0.104547;
