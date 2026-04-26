@@ -56,7 +56,7 @@ bool loopEnabled = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = ;                   // state of the rocket's control
+int flightState = 1;                   // state of the rocket's control
 bool logSD = true;
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
