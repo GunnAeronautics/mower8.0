@@ -3,9 +3,9 @@
 
 #define NUMPIXELS 2
 
-#define blinkratergb 250 + 1  // level converter has rise fall time of 100ns, the neopixel has polling at 125ns, 
+#define blinkratergb 2 ///// DELAY BETWEEN EACH CHANG EBLYATTTTTTTTTTTTTTTTT // level converter has rise fall time of 100ns, the neopixel has polling at 125ns, 
 #define errorONTime 5000
-#define rgbChange 8
+#define rgbChange 10 /// FUC KING CHANGE BLYATTTTT
 
 // LED Modes
 #define LED_MODE_PRE_STARTUP 0

@@ -22,12 +22,9 @@ int altitude1 = 0;
 int score10s = 0, score1s = 0, altitude10s = 0, altitude1s = 0;
 
 // rgb components
-
-int phase = 0;
+float hue = 0.0f;
 int direction = 1;
-unsigned int red = 255;
-unsigned int green = 0;
-unsigned int blue = 0;
+float r, g, b;
 
 Adafruit_NeoPixel pixels(NUMPIXELS, Led_Pin, NEO_GRB + NEO_KHZ800);
 // Led 1 and 2
@@ -217,41 +214,53 @@ void ledLoop(long timeElapsed1)
     }
     else if (rgb && timeElapsed1 - lastTime1 >= blinkratergb)
     {
-        switch (phase)
+        hue += 1.0f * rgbChange * direction;
+        if (hue >= 360.0f)
+            hue -= 360.0f;
+        if (hue < 0.0f)
+            hue += 360.0f;
+
+        int hi = int(hue / 60.0f) % 6;
+        float f = (hue / 60.0f) - hi;
+        float p = 0.0f;
+        float q = 1.0f - f;
+        float t = f;
+
+        switch (hi)
         {
         case 0:
-            green += direction;
-            if ((direction == 1 && green == 255) || (direction == -1 && green == 0))
-                phase = 1;
+            r = 1;
+            g = t;
+            b = p;
             break;
         case 1:
-            red -= direction;
-            if ((direction == 1 && red == 0) || (direction == -1 && red == 255))
-                phase = 2;
+            r = q;
+            g = 1;
+            b = p;
             break;
         case 2:
-            blue += direction;
-            if ((direction == 1 && blue == 255) || (direction == -1 && blue == 0))
-                phase = 3;
+            r = p;
+            g = 1;
+            b = t;
             break;
         case 3:
-            green -= direction;
-            if ((direction == 1 && green == 0) || (direction == -1 && green == 255))
-                phase = 4;
+            r = p;
+            g = q;
+            b = 1;
             break;
         case 4:
-            red += direction;
-            if ((direction == 1 && red == 255) || (direction == -1 && red == 0))
-                phase = 5;
+            r = t;
+            g = p;
+            b = 1;
             break;
         case 5:
-            blue -= direction;
-            if ((direction == 1 && blue == 0) || (direction == -1 && blue == 255))
-                phase = 0;
+            r = 1;
+            g = p;
+            b = q;
             break;
         }
 
-        setLEDColor(red * rgbChange, green * rgbChange, blue * rgbChange);
+        setLEDColor(r, g, b);
         lastTime1 = timeElapsed1;
     }
     else if (scoring)
