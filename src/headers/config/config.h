@@ -73,12 +73,12 @@
 // #define DESIRED_APOGEE 228.6 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 // #define DESIRED_APOGEE 228.6  //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 // #define DESIRED_APOGEE 220.98//725 feet
-#define DESIRED_APOGEE 236.22//775 feet
-// #define DESIRED_APOGEE 220.97 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+// #define DESIRED_APOGEE 236.22//775 feet
+#define DESIRED_APOGEE 220.97 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 
 //6.5 765
 //2.5 756
-#define DESIRED_FLIGHT_TIME 37000    // milliseconds (36-37 sec regulation 2026)
+#define DESIRED_FLIGHT_TIME 37500    // milliseconds (36-37 sec regulation 2026)
 //WARNING DOES NOT ACCOUNT FOR THE BOTTOM SECTION BEING LOWER
 //WARNING DOES NOT ACCOUNT FOR THE 
 // Parachute and drag flap configuration

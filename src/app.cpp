@@ -535,7 +535,7 @@ int lastDeployTime = 0;
 float ejectionTimes = 0;
 bool ejected = false;
 
-
+double altitudeCoef = 0.05;
 void appLoop()
 {
 #ifndef TEST_MODE
@@ -615,7 +615,7 @@ void appLoop()
   {
   case 0: // happy data printing mode
     fusedVelo = integratedVelocity;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*0.05), fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), fusedVelo);
     RandomCalculationsT = micros()-RandomCalculationsT;
 
     SDT = micros();
@@ -750,7 +750,7 @@ void appLoop()
   case 1: // pad
 #pragma region
     fusedVelo = altitudeV580;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), fusedVelo);
 
     Serial.print("Waiting on Pad");
     Serial.print("Accel: ");
@@ -808,7 +808,7 @@ void appLoop()
     fusedVelo = altitudeV580;
 #else
     fusedVelo = integratedVelocity;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), fusedVelo);
 
 #endif
     if (altitudeAccel < 0 || timeElapsed > 2500)
@@ -844,7 +844,7 @@ void appLoop()
 #else
     // fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
     fusedVelo = integratedVelocity;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), fusedVelo);
 
 #endif
     // accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
@@ -986,7 +986,7 @@ void appLoop()
   case 4: // we going dow
 #pragma region
     fusedVelo = altitudeV580;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), fusedVelo);
 
     closeSD(); // program runs slower now but data is more secure as the sd card closes every cycle
     openOpenSD();
