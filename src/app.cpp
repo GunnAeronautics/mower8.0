@@ -535,7 +535,7 @@ int lastDeployTime = 0;
 float ejectionTimes = 0;
 bool ejected = false;
 
-double altitudeCoef = 0.05;
+double altitudeCoef = 0.04;
 void appLoop()
 {
 #ifndef TEST_MODE
@@ -587,7 +587,7 @@ void appLoop()
   // altitudeAccel = zGlobalAccel;
 
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
-  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.97+newAltitude580*0.03;
+  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.98+newAltitude580*0.02;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
   trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
   altitude = newAltitude580;
