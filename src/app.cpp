@@ -21,6 +21,7 @@
 #include "headers/utils/sdcard.h"
 #include "headers/utils/servos.h"
 #include "headers/utils/led.h"
+#include "headers/utils/altitude_correction.h"
 
 #include "esp_partition.h"
 #endif
@@ -63,6 +64,9 @@ int flightStateAdvancementTrigger = 0; // counts number of times state switching
 int timesTheRocketIsStill = 0;
 double altitudeAccel = 0;
 // float altitudeV = 0;
+
+double airDensity = 1.174939201718265749; 
+float lastTemp;
 
 double dragCoefficient = 0;
 double desiredDragCoef = 0;
@@ -445,11 +449,14 @@ void appSetup()
 
   while(!loopEnabled) {
     if (digitalRead(FLIGHTENPIN) == LOW) {
+      lastTemp = getGroundTemp();
+      airDensity = (getGroundPressure()*100) / (287.058 * (lastTemp + 273.15));
       loopEnabled = true;
       // Serial.begin(115200);
       lastT = micros();
       clearLED();
       LedMode(LED_MODE_ARMED_READY);
+      
 
       pinMode(FLIGHTENPIN, OUTPUT);
     }
@@ -603,6 +610,19 @@ void appLoop()
   if (altitude > maxAltitude)
   { // set max altitude
     maxAltitude = altitude;
+  }
+
+  // corrections
+  if (abs(fusedVelo) > 5.0 && airbrakeAngle > 5.0)
+  {
+    altitude = correct_altitude_for_airbrake(
+        abs(fusedVelo),        // Use absolute value of velocity
+        airbrakeAngle,         // Airbrake angle in degrees
+        altitude,              // Measured altitude
+        airDensity,  // Air density (sea level default)
+        seaPressure,              // Sea level pressure
+        lastTemp                 // Temperature in Kelvin
+    );
   }
 
 #ifdef DEBUG
