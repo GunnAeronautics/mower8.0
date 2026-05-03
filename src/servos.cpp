@@ -6,10 +6,10 @@ float minServo1 = 0;
 float maxServo1 = 100;
 
 #define SERVO1_PIN SERVO_J9 // Duel Deploy // 45 is unarmed, 135 is release parachute
-#define SERVO2_PIN SERVO_J7 
-#define SERVO3_PIN SERVO_J6 // drag flaps
-#define SERVO4_PIN SERVO_J5 // drag flaps
-#define SERVO5_PIN SERVO_J4 
+#define SERVO5_PIN SERVO_J7 // drag flaps
+#define SERVO2_PIN SERVO_J6 // drag flaps
+#define SERVO4_PIN SERVO_J5 
+#define SERVO3_PIN SERVO_J4 
 
 // #define MIN_FLAP_STATE 0  // angle for minimum flap
 // #define MAX_FLAP_STATE 90 // angle for max flaps
