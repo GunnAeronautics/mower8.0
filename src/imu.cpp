@@ -203,7 +203,7 @@ void bnoSetup()
     // If fakeimu is enabled, generate synthetic (but plausible) IMU values.
 
     // imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     // imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     // imu::Vector<3> linAccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
     
@@ -243,12 +243,12 @@ void bnoSetup()
     #endif
     #ifdef A3BOARD
     zenith = angleBetweenAxis(bnoOrientation,"Y-");
-    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+    // zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
 
     #endif
     #ifdef A4BOARD
     zenith = angleBetweenAxis(bnoOrientation,"Y-");
-    zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
+    // zGlobalAccel = axisComponent(bnoOrientation, accel.x(), accel.y(), accel.z(), "Z+");
 
     #endif
 

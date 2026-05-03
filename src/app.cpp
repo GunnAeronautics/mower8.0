@@ -57,7 +57,7 @@ bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
 int flightState = 0;                   // state of the rocket's control
-bool logSD = false;
+bool logSD = true;
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -93,7 +93,8 @@ float ejectionChargePreDipMax = 0;
 float lastGoodAltitude = 0;
 float lastAltitude = 0;
 float secondLastAltitude = 0;
-
+double xAxisAccel = 0;
+double yAxisAccel = 0;
 long int TimeStuffT = 0;//used to track timings of stuff
 long int SDT = 0;//time it takes for SD to do it's thing logging
 long int BaroT = 0;
@@ -540,8 +541,7 @@ float ejectionTimes = 0;
 bool ejected = false;
 
 double altitudeCoef = 0;
-double xAxisAccel = 0;
-double yAxisAccel = 0;
+
 double bernoulliCoefficient = 0;
 double bernoulliAltitude = 0;
 void appLoop()
