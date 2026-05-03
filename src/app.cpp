@@ -56,8 +56,8 @@ bool loopEnabled = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
-bool logSD = true;
+int flightState = 0;                   // state of the rocket's control
+bool logSD = false;
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -294,6 +294,8 @@ String getDataHeader()
          "j,"
          "k,"
          "w,"
+         "xAxisAccel,"
+         "yAxisAccel,"
 
          "\n";
 }
@@ -313,7 +315,7 @@ void dataLogging()
       String(integratedAltitude, DATAPRECISION) + ',' +
       String(trueIntegratedAltitude, DATAPRECISION) + ',' +
 
-      String(altitude580, DATAPRECISION) + ',' +
+      String(newAltitude580, DATAPRECISION) + ',' +
       String(fusedVelo, DATAPRECISION) + ',' +
       String(integratedVelocity, DATAPRECISION) + ',' +
       String(trueIntegratedVelocity, DATAPRECISION) + ',' +
@@ -338,7 +340,9 @@ void dataLogging()
       String(bnoI, DATAPRECISION) + ',' +
       String(bnoJ, DATAPRECISION) + ',' +
       String(bnoK, DATAPRECISION) + ',' +
-      String(bnoW, DATAPRECISION) + '\n';
+      String(bnoW, DATAPRECISION) + ',' +
+      String(xAxisAccel) + ',' +
+      String(yAxisAccel, DATAPRECISION) + '\n';
 
   logData(dataString);
 }
@@ -535,7 +539,11 @@ int lastDeployTime = 0;
 float ejectionTimes = 0;
 bool ejected = false;
 
-double altitudeCoef = 0.04;
+double altitudeCoef = 0;
+double xAxisAccel = 0;
+double yAxisAccel = 0;
+double bernoulliCoefficient = 0;
+double bernoulliAltitude = 0;
 void appLoop()
 {
 #ifndef TEST_MODE
@@ -569,10 +577,16 @@ void appLoop()
 #endif
 #ifdef A3BOARD
     altitudeAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-#endif
+    xAxisAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "X+"); // positive is upward and no gravity factored
+    yAxisAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "Y+"); // positive is upward and no gravity factored
+
+    #endif
 #ifdef A4BOARD
     altitudeAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "Z+") - GRAVITY; // positive is upward and no gravity factored
-#endif
+    xAxisAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "X+"); // positive is upward and no gravity factored
+    yAxisAccel = axisComponent(getQuat(), -xAccel,- yAccel, zAccel, "Y+"); // positive is upward and no gravity factored
+
+    #endif
   }
   else{
     altitudeAccel = -yAccel - GRAVITY;
@@ -585,12 +599,16 @@ void appLoop()
   dragCoefficient = clampDouble(0, 1, dragCoefficient); // safety for predict apogee
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
-
+  if (timeElapsed < 600){
+    bernoulliCoefficient = (newAltitude580-trueIntegratedAltitude)/(pow(trueIntegratedVelocity,2));
+  }
+  bernoulliAltitude = newAltitude580 -  bernoulliCoefficient*integratedVelocity*integratedVelocity;
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
-  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.98+newAltitude580*0.02;
+  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.98+bernoulliAltitude*0.02;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
   trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
-  altitude = newAltitude580;
+
+  altitude = bernoulliAltitude;
 
 
   // if ((flightState>1)&&(flightState < 4)){
@@ -679,12 +697,18 @@ void appLoop()
     Serial.print("BaroAlt: ");
     Serial.print(newAltitude580, DATAPRECISION);
     Serial.print(", ");
-    Serial.print("intAlt: ");
-    Serial.print(integratedAltitude, DATAPRECISION);
+    Serial.print("xAccel: ");
+    Serial.print(xAxisAccel, DATAPRECISION);
     Serial.print(", ");
-    Serial.print("baroAlt: ");
-    Serial.print(altitudeV580, DATAPRECISION);
+    Serial.print("yAccel: ");
+    Serial.print(yAxisAccel, DATAPRECISION);
     Serial.print(", ");
+    // Serial.print("intAlt: ");
+    // Serial.print(integratedAltitude, DATAPRECISION);
+    // Serial.print(", ");
+    // Serial.print("baroAlt: ");
+    // Serial.print(altitudeV580, DATAPRECISION);
+    // Serial.print(", ");
 
     // // Serial.print("BMP390: ");
     // // Serial.print(altitude390,DATAPRECISION);
@@ -693,15 +717,15 @@ void appLoop()
     // Serial.print(altitudeV390,DATAPRECISION);
     // Serial.print(", ");
 
-    Serial.print("fusedVelo: ");
-    Serial.print(fusedVelo, DATAPRECISION);
-    Serial.print(",");
+    // Serial.print("fusedVelo: ");
+    // Serial.print(fusedVelo, DATAPRECISION);
+    // Serial.print(",");
     // Serial.print("trueIntegratedVelo: ");
     // Serial.print(trueIntegratedVelocity, DATAPRECISION);
     // Serial.print(",");
-    Serial.print("accel: ");
-    Serial.print(altitudeAccel, DATAPRECISION);
-    Serial.print(", ");
+    // Serial.print("accel: ");
+    // Serial.print(altitudeAccel, DATAPRECISION);
+    // Serial.print(", ");
     // Serial.print("globalZaccel: ");
     // Serial.print(zGlobalAccel, DATAPRECISION);
     // Serial.print(", ");
@@ -923,58 +947,62 @@ void appLoop()
     // advanced code vvv
     if (desiredDragCoef > dragCoefficient)
     {
-      if (abs(CdError) > 0.0050)
-      {
-        airbrakeAngle += 4;
-      }
-      else if (abs(CdError) > 0.0030)
-      {
-        airbrakeAngle += 3;
-      }
-      else if (abs(CdError) > 0.0010)
-      {
-        airbrakeAngle += 2;
-      }
-      else if (abs(CdError) > 0.0005)
-      {
-        airbrakeAngle += 1;
-      }
-      else if (abs(CdError) > 0.0003)
-      {
-        airbrakeAngle += 0.5;
-      }
+      airbrakeAngle += abs(CdError)*deltaT/1000000.0*2000.0*(airbrakeAngle-DRAG_FLAPS_UNDEPLOYED_ANGLE+60.0);
+
+      // if (abs(CdError) > 0.0050)
+      // {
+      //   airbrakeAngle += 4;
+      // }
+      // else if (abs(CdError) > 0.0030)
+      // {
+      //   airbrakeAngle += 3;
+      // }
+      // else if (abs(CdError) > 0.0010)
+      // {
+      //   airbrakeAngle += 2;
+      // }
+      // else if (abs(CdError) > 0.0005)
+      // {
+      //   airbrakeAngle += 1;
+      // }
+      // else if (abs(CdError) > 0.0003)
+      // {
+      //   airbrakeAngle += 0.5;
+      // }
       
-      else
-      {
-        airbrakeAngle += 0.3;
-      }
+      // else
+      // {
+      //   airbrakeAngle += 0.3;
+      // }
     }
     else
     {
-      if (abs(CdError) > 0.0050)
-      {
-        airbrakeAngle -= 4;
-      }
-      else if (abs(CdError) > 0.0030)
-      {
-        airbrakeAngle -= 3;
-      }
-      else if (abs(CdError) > 0.0010)
-      {
-        airbrakeAngle -= 2;
-      }
-      else if (abs(CdError) > 0.0005)
-      {
-        airbrakeAngle -= 1;
-      }
-      else if (abs(CdError) > 0.0003)
-      {
-        airbrakeAngle -= 0.5;
-      }
-      else
-      {
-        airbrakeAngle -= 0.3;
-      }
+      airbrakeAngle -= abs(CdError)*deltaT/1000000.0*2000.0*(DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle+60.0);
+
+      // if (abs(CdError) > 0.0050)
+      // {
+      //   airbrakeAngle -= 4;
+      // }
+      // else if (abs(CdError) > 0.0030)
+      // {
+      //   airbrakeAngle -= 3;
+      // }
+      // else if (abs(CdError) > 0.0010)
+      // {
+      //   airbrakeAngle -= 2;
+      // }
+      // else if (abs(CdError) > 0.0005)
+      // {
+      //   airbrakeAngle -= 1;
+      // }
+      // else if (abs(CdError) > 0.0003)
+      // {
+      //   airbrakeAngle -= 0.5;
+      // }
+      // else
+      // {
+      //   airbrakeAngle -= 0.3;
+      // }
 
     }
 
