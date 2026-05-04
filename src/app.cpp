@@ -557,7 +557,6 @@ void appLoop()
   BaroT = micros();         baroDataRead();               BaroT = micros() - BaroT;
   AltProcessT = micros();   altitudeProcessing(deltaT);   AltProcessT = micros() - AltProcessT;
   ADXLT = micros();         getADXLData();                ADXLT = micros() - ADXLT;
-  // ledLoop(timeElapsed);
   RandomCalculationsT = micros();
 #endif
   // if (accelerometerTime){
@@ -773,6 +772,8 @@ void appLoop()
 
   case 1: // pad
 #pragma region
+    ledLoop(timeElapsed);
+
     fusedVelo = altitudeV580;
     desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), fusedVelo);
 
