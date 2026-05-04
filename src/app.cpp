@@ -262,6 +262,8 @@ String getDataHeader()
 
          "Alt,"
          "integratedAlt,"
+         "bernoulliAlt,"
+
          "trueIntAlt,"
 
          "baroAlt580,"
@@ -304,6 +306,8 @@ String getDataHeader()
 #ifdef TEST_MODE
 void dataLogging() {}
 #else
+double bernoulliAltitude = 0;
+
 void dataLogging()
 {
   String dataString =
@@ -315,6 +319,7 @@ void dataLogging()
       String(altitude, DATAPRECISION) + ',' +
       String(integratedAltitude, DATAPRECISION) + ',' +
       String(trueIntegratedAltitude, DATAPRECISION) + ',' +
+      String(bernoulliAltitude, DATAPRECISION) + ',' +
 
       String(newAltitude580, DATAPRECISION) + ',' +
       String(fusedVelo, DATAPRECISION) + ',' +
@@ -543,7 +548,6 @@ bool ejected = false;
 double altitudeCoef = 0;
 
 double bernoulliCoefficient = 0;
-double bernoulliAltitude = 0;
 void appLoop()
 {
 #ifndef TEST_MODE
@@ -600,14 +604,15 @@ void appLoop()
   // altitudeAccel = zGlobalAccel;
   if (timeElapsed < 600){
     bernoulliCoefficient = (newAltitude580-trueIntegratedAltitude)/(pow(trueIntegratedVelocity,2));
+    // bernoulliCoefficient = -0.0002979
   }
-  bernoulliAltitude = newAltitude580 -  bernoulliCoefficient*trueIntegratedVelocity*trueIntegratedVelocity;
+  bernoulliAltitude = newAltitude580 -  (DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle)/DRAG_FLAPS_DEPLOYED_ANGLE  *bernoulliCoefficient*trueIntegratedVelocity*trueIntegratedVelocity;
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
-  integratedAltitude = (integratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0))*0.985+bernoulliAltitude*0.015;
+  integratedAltitude = (integratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0))*0.985+newAltitude580*0.015;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
   trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
 
-  altitude = bernoulliAltitude;
+  altitude = newAltitude580;
 
 
   // if ((flightState>1)&&(flightState < 4)){
