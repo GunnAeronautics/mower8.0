@@ -869,7 +869,7 @@ void appLoop()
 #else
     // fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
     fusedVelo = integratedVelocity;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), trueIntegratedVelocity);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), (trueIntegratedVelocity*(fusedVelo/100.0)+fusedVelo*(1.0-fusedVelo/100.0)));
 
 #endif
     // accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
@@ -978,7 +978,7 @@ void appLoop()
     }
     else
     {
-      airbrakeAngle -= abs(CdError)*deltaT/1000000.0*2000.0*(DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle+60.0);
+      airbrakeAngle -= abs(CdError)*deltaT/1000000.0*2000.0*(DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle+100.0);
 
       // if (abs(CdError) > 0.0050)
       // {
