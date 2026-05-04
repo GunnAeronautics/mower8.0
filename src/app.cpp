@@ -594,7 +594,7 @@ void appLoop()
   // In TEST_MODE, altitude and altitudeAccel are set by test cases directly.
 #endif
 
-  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0.01, 100000, pow(fusedVelo, 2)));
+  dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0.01, 100000, pow(trueIntegratedVelocity, 2)));
   dragCoefficient = clampDouble(0, 1, dragCoefficient); // safety for predict apogee
   CdError = desiredDragCoef - dragCoefficient;
   // altitudeAccel = zGlobalAccel;
@@ -603,7 +603,7 @@ void appLoop()
   }
   bernoulliAltitude = newAltitude580 -  bernoulliCoefficient*integratedVelocity*integratedVelocity;
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
-  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.98+bernoulliAltitude*0.02;
+  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.985+bernoulliAltitude*0.015;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
   trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
 
@@ -869,7 +869,7 @@ void appLoop()
 #else
     // fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
     fusedVelo = integratedVelocity;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), fusedVelo);
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), trueIntegratedVelocity);
 
 #endif
     // accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
