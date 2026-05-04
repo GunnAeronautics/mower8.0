@@ -601,9 +601,9 @@ void appLoop()
   if (timeElapsed < 600){
     bernoulliCoefficient = (newAltitude580-trueIntegratedAltitude)/(pow(trueIntegratedVelocity,2));
   }
-  bernoulliAltitude = newAltitude580 -  bernoulliCoefficient*integratedVelocity*integratedVelocity;
+  bernoulliAltitude = newAltitude580 -  bernoulliCoefficient*trueIntegratedVelocity*trueIntegratedVelocity;
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
-  integratedAltitude = (integratedAltitude + integratedVelocity * deltaT / 1000000.0)*0.985+bernoulliAltitude*0.015;
+  integratedAltitude = (integratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0))*0.985+bernoulliAltitude*0.015;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
   trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
 
