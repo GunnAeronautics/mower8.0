@@ -73,6 +73,7 @@ double trueIntegratedAltitude = 0;
 double trueIntegratedVelocity = 0;
 
 double fusedVelo = 0.0;
+
 float accelTrust = 1.0;
 // KalmanVelocityEstimator kalman(1, 3);
 // RollingAverage airBrakeDragCoef(100);
@@ -95,6 +96,7 @@ float lastAltitude = 0;
 float secondLastAltitude = 0;
 double xAxisAccel = 0;
 double yAxisAccel = 0;
+float midAirbrakeAngle = (DRAG_FLAPS_DEPLOYED_ANGLE+DRAG_FLAPS_UNDEPLOYED_ANGLE)/2;
 long int TimeStuffT = 0;//used to track timings of stuff
 long int SDT = 0;//time it takes for SD to do it's thing logging
 long int BaroT = 0;
@@ -262,7 +264,6 @@ String getDataHeader()
 
          "Alt,"
          "integratedAlt,"
-         "bernoulliAlt,"
 
          "trueIntAlt,"
 
@@ -285,6 +286,7 @@ String getDataHeader()
 
          "PredApogee,"
          "airbrake PredApogee,"
+         "noairbrake PredApogee,"
 
          "Chute Deployed,"
          "dragFlaps deployed,"
@@ -306,7 +308,6 @@ String getDataHeader()
 #ifdef TEST_MODE
 void dataLogging() {}
 #else
-double bernoulliAltitude = 0;
 
 void dataLogging()
 {
@@ -319,7 +320,6 @@ void dataLogging()
       String(altitude, DATAPRECISION) + ',' +
       String(integratedAltitude, DATAPRECISION) + ',' +
       String(trueIntegratedAltitude, DATAPRECISION) + ',' +
-      String(bernoulliAltitude, DATAPRECISION) + ',' +
 
       String(newAltitude580, DATAPRECISION) + ',' +
       String(fusedVelo, DATAPRECISION) + ',' +
@@ -330,13 +330,14 @@ void dataLogging()
       String(altitudeAccel, DATAPRECISION) + ',' +
       String(zGlobalAccel - GRAVITY, DATAPRECISION) + ',' +
       String(-yAccel - GRAVITY, DATAPRECISION) + ',' +
-      String(dragCoefficient, DATAPRECISION) + ',' +
-      String(desiredDragCoef, DATAPRECISION) + ',' +
+      String(dragCoefficient, DATAPRECISION+3) + ',' +
+      String(desiredDragCoef, DATAPRECISION+3) + ',' +
       String(CdError, DATAPRECISION+3) + ',' +
       String((static_cast<float>(DESIRED_FLIGHT_TIME - timeElapsed) / 1000) * PARACHUTE_TERM_VELOCITY, DATAPRECISION) + ',' +
 
       String(predictApogee(integratedAltitude, fusedVelo, dragCoefficient), DATAPRECISION) + ',' +
       String(predictApogee(integratedAltitude, fusedVelo, COEF_DRAG_FLAPDEPLOYED), DATAPRECISION) + ',' +
+      String(predictApogee(integratedAltitude, fusedVelo, COEF_DRAG_FLAPUNDEPLOYED), DATAPRECISION) + ',' +
       String(parachuteDeployed * 100) + ',' +
       String(dragFlapDeployed * 100) + ',' +
       String(airbrakeAngle, DATAPRECISION) + ',' +
@@ -546,7 +547,6 @@ bool ejected = false;
 
 double altitudeCoef = 0;
 
-double bernoulliCoefficient = 0;
 void appLoop()
 {
 #ifndef TEST_MODE
@@ -599,13 +599,10 @@ void appLoop()
 
   dragCoefficient = abs((altitudeAccel + GRAVITY) / clampDouble(0.01, 100000, pow(trueIntegratedVelocity, 2)));
   dragCoefficient = clampDouble(0, 1, dragCoefficient); // safety for predict apogee
-  CdError = desiredDragCoef - dragCoefficient;
+  // CdError = desiredDragCoef - dragCoefficient;
+  CdError = desiredDragCoef - 0.00385;
+
   // altitudeAccel = zGlobalAccel;
-  if (timeElapsed < 600){
-    bernoulliCoefficient = (newAltitude580-trueIntegratedAltitude)/(pow(trueIntegratedVelocity,2));
-    // bernoulliCoefficient = -0.0002979
-  }
-  bernoulliAltitude = newAltitude580 -  (DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle)/DRAG_FLAPS_DEPLOYED_ANGLE  *bernoulliCoefficient*trueIntegratedVelocity*trueIntegratedVelocity;
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
   integratedAltitude = (integratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0))*0.985+newAltitude580*0.015;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
@@ -649,10 +646,7 @@ void appLoop()
     }
 
     SDT = micros()-SDT;
-
-
-
-
+    if (!LOGSD){
 #pragma region
     // // dataLogging();
     // // desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, fusedVelo);
@@ -769,9 +763,10 @@ void appLoop()
     // Serial.print(", ");
 
     Serial.println();
-
+    
 // Serial.println(deltaT);
-#pragma endregion
+  #pragma endregion
+    }
     break;
 
   case 1: // pad
@@ -950,14 +945,15 @@ void appLoop()
 
     // }
     // advanced code vvv
-    if (desiredDragCoef > dragCoefficient)
-    {
-      airbrakeAngle += abs(CdError)*deltaT/1000000.0*2000.0*(airbrakeAngle-DRAG_FLAPS_UNDEPLOYED_ANGLE+100.0);
-    }
-    else
-    {
-      airbrakeAngle -= abs(CdError)*deltaT/1000000.0*2000.0*(DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle+100.0);
-    }
+    // if (desiredDragCoef > dragCoefficient)
+    // {
+    //   // airbrakeAngle += abs(CdError)*deltaT/1000000.0*2000.0*(airbrakeAngle-DRAG_FLAPS_UNDEPLOYED_ANGLE+100.0);
+    // }
+    // else
+    // {
+    //   // airbrakeAngle -= abs(CdError)*deltaT/1000000.0*2000.0*(DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle+100.0);
+    // }
+    airbrakeAngle = midAirbrakeAngle + CdError*deltaT/1000000,0*20000000.0;
 
     airbrakeAngle = clampDouble(DRAG_FLAPS_UNDEPLOYED_ANGLE, DRAG_FLAPS_DEPLOYED_ANGLE, airbrakeAngle);
     moveFlaps((int)round(airbrakeAngle));

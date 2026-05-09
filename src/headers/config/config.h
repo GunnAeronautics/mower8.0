@@ -72,7 +72,7 @@
 //CONTROL PANEL
 #define DESIRED_APOGEE 750/3.281 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 #define STARTING_STATE 0//0 is DEBUG!!!
-#define LOGSD false//Log SD or Serial pick one!
+#define LOGSD true//Log SD or Serial pick one!
 #define BRIGHT_LED false
 #define PARACHUTE_TERM_VELOCITY 6.55 // m/s real // old = 6.65, new = 5.600991463
 
