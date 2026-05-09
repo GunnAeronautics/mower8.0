@@ -56,8 +56,8 @@ bool loopEnabled = false;
 bool alreadyPushedData = false;
 // States & triggers
 // VVV (IMPORTANT) set 0 for testing logging data, 1 for arming the rocket
-int flightState = 1;                   // state of the rocket's control
-bool logSD = true;
+int flightState = STARTING_STATE;                   // state of the rocket's control
+bool logSD = LOGSD;
 int flightStateAdvancementTrigger = 0; // counts number of times state switching event occurs
 
 int timesTheRocketIsStill = 0;
@@ -485,7 +485,6 @@ void downwardLogic()
     // if the rocket is under 15 meters in the air deploy asap
     if (altitude < 20.0)
     {
-
       deployChute();
       parachuteDeployed = true;
     }
@@ -699,7 +698,7 @@ void appLoop()
     Serial.print(deltaT);
     Serial.print(", ");
     Serial.print("BaroAlt: ");
-    Serial.print(newAltitude580, DATAPRECISION);
+    Serial.print(newAltitude580*3.281, DATAPRECISION);
     Serial.print(", ");
     Serial.print("xAccel: ");
     Serial.print(xAxisAccel, DATAPRECISION);
@@ -953,63 +952,11 @@ void appLoop()
     // advanced code vvv
     if (desiredDragCoef > dragCoefficient)
     {
-      airbrakeAngle += abs(CdError)*deltaT/1000000.0*2000.0*(airbrakeAngle-DRAG_FLAPS_UNDEPLOYED_ANGLE+60.0);
-
-      // if (abs(CdError) > 0.0050)
-      // {
-      //   airbrakeAngle += 4;
-      // }
-      // else if (abs(CdError) > 0.0030)
-      // {
-      //   airbrakeAngle += 3;
-      // }
-      // else if (abs(CdError) > 0.0010)
-      // {
-      //   airbrakeAngle += 2;
-      // }
-      // else if (abs(CdError) > 0.0005)
-      // {
-      //   airbrakeAngle += 1;
-      // }
-      // else if (abs(CdError) > 0.0003)
-      // {
-      //   airbrakeAngle += 0.5;
-      // }
-      
-      // else
-      // {
-      //   airbrakeAngle += 0.3;
-      // }
+      airbrakeAngle += abs(CdError)*deltaT/1000000.0*2000.0*(airbrakeAngle-DRAG_FLAPS_UNDEPLOYED_ANGLE+100.0);
     }
     else
     {
       airbrakeAngle -= abs(CdError)*deltaT/1000000.0*2000.0*(DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle+100.0);
-
-      // if (abs(CdError) > 0.0050)
-      // {
-      //   airbrakeAngle -= 4;
-      // }
-      // else if (abs(CdError) > 0.0030)
-      // {
-      //   airbrakeAngle -= 3;
-      // }
-      // else if (abs(CdError) > 0.0010)
-      // {
-      //   airbrakeAngle -= 2;
-      // }
-      // else if (abs(CdError) > 0.0005)
-      // {
-      //   airbrakeAngle -= 1;
-      // }
-      // else if (abs(CdError) > 0.0003)
-      // {
-      //   airbrakeAngle -= 0.5;
-      // }
-      // else
-      // {
-      //   airbrakeAngle -= 0.3;
-      // }
-
     }
 
     airbrakeAngle = clampDouble(DRAG_FLAPS_UNDEPLOYED_ANGLE, DRAG_FLAPS_DEPLOYED_ANGLE, airbrakeAngle);
