@@ -237,8 +237,12 @@ void ledLoop(long timeElapsed1)
         else              { r = c; g = 0; b = x; }
 
         // convert to 0–255 PWM
-        pixels.setBrightness(10);
-
+        if (BRIGHT_LED){
+            pixels.setBrightness(255);
+        }
+        else{
+            pixels.setBrightness(10);
+        }
         setLEDColor((r + m) * 255, (g + m) * 255, (b + m) * 255);
         lastTime1 = timeElapsed1;
     }

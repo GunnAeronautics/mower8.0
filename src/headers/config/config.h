@@ -69,12 +69,12 @@
 // FLIGHT PARAMETERS
 // ============================================================================
 
-// Apogee and flight time targets (TARC competition specifications)
-// #define DESIRED_APOGEE 228.6 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
-// #define DESIRED_APOGEE 228.6  //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
-// #define DESIRED_APOGEE 220.98//725 feet
-// #define DESIRED_APOGEE 236.22//775 feet
-#define DESIRED_APOGEE 222.49 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+//CONTROL PANEL
+#define DESIRED_APOGEE 750/3.281 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+#define STARTING_STATE 0//0 is DEBUG!!!
+#define LOGSD false//Log SD or Serial pick one!
+#define BRIGHT_LED false
+#define PARACHUTE_TERM_VELOCITY 6.55 // m/s real // old = 6.65, new = 5.600991463
 
 //6.5 765
 //2.5 756
@@ -84,7 +84,6 @@
 // Parachute and drag flap configuration
 // #define PARACHUTE_TERM_VELOCITY 6.5 // m/s
 // #define PARACHUTE_TERM_VELOCITY 6.1//spill hole // m/s real // old = 6.65, new = 5.600991463
-#define PARACHUTE_TERM_VELOCITY 6.55 // m/s real // old = 6.65, new = 5.600991463
 
 //6.31 works with 3 to 6mph wind 610 G
 //5.56 13 mph ~610
@@ -100,7 +99,7 @@
 //in ms
 #define DRAG_FLAP_MOVE_TIME 500
 #define PARACHUTE_DEPLOYED_ANGLE 180
-#define PARACHUTE_UNDEPLOYED_ANGLE 0
+#define PARACHUTE_UNDEPLOYED_ANGLE 10
 // #define 
 // ============================================================================
 // DATA LOGGING
