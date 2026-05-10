@@ -1,9 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// #define A0BOARD
-// #define A3BOARD
-#define A4BOARD
 
 // #define A1BOARD
 #define FAKE_IMU false
@@ -70,11 +67,12 @@
 // ============================================================================
 
 //CONTROL PANEL
-#define DESIRED_APOGEE 750/3.281 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
-#define STARTING_STATE 0//0 is DEBUG!!!
+#define DESIRED_APOGEE 775/3.281 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+#define STARTING_STATE 1//0 is DEBUG!!!
 #define LOGSD true//Log SD or Serial pick one!
-#define BRIGHT_LED false
-#define PARACHUTE_TERM_VELOCITY 6.55 // m/s real // old = 6.65, new = 5.600991463
+#define BRIGHT_LED true
+#define PARACHUTE_TERM_VELOCITY 6.0 // m/s real // old = 6.65, new = 5.600991463
+#define A4BOARD
 
 //6.5 765
 //2.5 756
