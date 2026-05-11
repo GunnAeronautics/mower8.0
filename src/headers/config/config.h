@@ -67,7 +67,7 @@
 // ============================================================================
 
 //CONTROL PANEL
-#define DESIRED_APOGEE 725/3.281 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
+#define DESIRED_APOGEE 767/3.281 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 #define STARTING_STATE 1//0 is DEBUG!!!
 #define LOGSD true//Log SD or Serial pick one!
 #define BRIGHT_LED true

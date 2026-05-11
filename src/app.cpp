@@ -953,7 +953,7 @@ void appLoop()
     // {
     //   // airbrakeAngle -= abs(CdError)*deltaT/1000000.0*2000.0*(DRAG_FLAPS_DEPLOYED_ANGLE-airbrakeAngle+100.0);
     // }
-    airbrakeAngle = midAirbrakeAngle + CdError*KP;
+    airbrakeAngle = midAirbrakeAngle + CdError*KP*(100-fusedVelo)/100*3;
 
     airbrakeAngle = clampDouble(DRAG_FLAPS_UNDEPLOYED_ANGLE, DRAG_FLAPS_DEPLOYED_ANGLE, airbrakeAngle);
     moveFlaps((int)round(airbrakeAngle));
