@@ -72,7 +72,7 @@
 #define LOGSD true//Log SD or Serial pick one!
 #define BRIGHT_LED true
 #define PARACHUTE_TERM_VELOCITY 6.54 // m/s real // old = 6.65, new = 5.600991463
-#define A4BOARD
+#define A3BOARD
 #define KP 230000.0 //274.3 // 900 ft //228.6      // m (750 ft specified by TARC guidelines) + offset 750 - 723 = 27 ft, binary search 1 2 x 6.5
 
 //6.5 765
