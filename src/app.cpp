@@ -604,7 +604,7 @@ void appLoop()
 
   // altitudeAccel = zGlobalAccel;
   integratedVelocity = (integratedVelocity + (altitudeAccel * deltaT / 1000000.0))*0.9994+altitudeV580*0.0006;
-  integratedAltitude = (integratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0))*0.985+newAltitude580*0.015;
+  integratedAltitude = (integratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0))*0.9965+newAltitude580*0.0035;
   trueIntegratedVelocity = trueIntegratedVelocity + (altitudeAccel * deltaT / 1000000.0);
   trueIntegratedAltitude = trueIntegratedAltitude + (trueIntegratedVelocity * deltaT / 1000000.0); 
 
@@ -868,7 +868,7 @@ void appLoop()
 #else
     // fusedVelo = altitudeV580 * (1.0 - accelTrust) + integratedVelocity * accelTrust;
     fusedVelo = integratedVelocity;
-    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE-((DESIRED_APOGEE-altitude)*altitudeCoef), (trueIntegratedVelocity*(fusedVelo/100.0)+fusedVelo*(1.0-fusedVelo/100.0)));
+    desiredDragCoef = inverseApogee(integratedAltitude, DESIRED_APOGEE, integratedVelocity);
 
 #endif
     // accelTrust -= 0.002; // 1 divided by this amount = roughly how much time till fusedVelo is totally baro
