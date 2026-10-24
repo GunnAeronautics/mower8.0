@@ -7,7 +7,7 @@ featuring airbrakes, mechanical parachute deployment, and a camera system, the s
 
 ## Electronics
 We wanted our electronics to have maximium functionality even if it seems  pointless. We choose the latest sensors on the market.
-
+![Electronics](electronicsImg.png)
 ### Microprocessor
 #### ESP32 
 - boasting `240` mhz and `2` cores, we choose this microprocessor for it's esp32 speed and ease of use.
@@ -90,9 +90,57 @@ every sensor/peripheral is it's own file for organization. The logic is split in
 #### On the ground
 - no data logging, the rocket remains dossile
 
-## ALGORITHMS *STUB*
-### Rolling Accelerometer Tare
+## ALGORITHMS
 ### Kalman Filter
-### Predict Apogee
-### Control Loop
+![filter](filterImg.png)
+Estimating the state of the rocket is required for active control. In order to guide the rocket to the target altitude, we first need find where it is.
+
+Barometer:
+In our first 2 launches, we relied mainly on a barometer for altitude and velocity. However, when airbrakes deploy, they cause a high-pressure region above where the sensors are, causing a corresponding dip in the altitude read (Fig. 1). 
+
+Accelerometer:
+In our next two launches, we relied on the accelerometer for velocity. While the velocity was smooth, it tended to drift over time as tiny errors compounded (Fig. 2). We tried to reduce the error by compensating for orientation, but this was only marginally helpful. From these early launches, we decided to implement a better filter for the data.
+
+Custom Filter:
+In our last 3 launches, we used a complimentary filter. By relying on an accelerometer integration while "spiking" the state with barometric datapoints, we could steer the state towards a global truth while still cashing in on the benefits of a smooth curve. The results can be seen on the graphs, resilience towards airbrake sensitivity and drift.
+
+We validated filter coefficients through comparison to many previous telemetry logs.
+### Predict Apogee & Control Loop
+![alt text](image.png)
+We developed a unique method to control the airbrakes.
+
+Our algorithm only runs when the motor burns out as it is easier to predict the rocket while it coasts up. 
+ 
+We start by finding the current drag coefficient with measured quantities. 
+
+We then find the desired drag coefficient. This is the drag coefficient k that says: "If we want our rocket to reach the target apogee, what would our drag coefficient need to be?" To solve this question we inverted our predict apogee formula. Instead of predicting our apogee with a given drag coefficient and the rocket's current state, we find the drag coefficient required to reach a apogee of 750 feet or 228.6 meters. The predict apogee formula requires inputs of: k drag coefficient, mass, velocity, height, gravity. Then applying a binary search inverting the function finding the target drag coefficient. 
+
+After finding the current and desired drag coefficients, if the desired drag is more than the current drag, we increase drag through the airbrakes and vice versa. This is done through a simple P controller. A bigger error in drag coefficient results in a bigger change in airbrake deployment.
+
 ### Parachute Deployment
+![alt text](image-1.png)
+Parachute Deploy Design:
+- Reefs the parachute during initial descent.
+- Small parachute hole stops the knots in the shroud from going through
+- The servo wire is longer than the shroud and shock chord combined. All force is on shock cord
+
+- Our failure points: putting the knots on the wrong side (force on servo not plastic), tangle the parachute during wrapping, the wire breaks (see qual 1).
+
+Improvement plans:
+- A variable tightening of the reefing so that we can change the diameter of the parachute's opening.
+
+
+
+[1] Plot showing altitude over time, including:
+
+1. Target altitude (red),
+
+2. Actual altitude (blue), and
+
+3. Parachute deployment indicator (yellow).
+The grey line indicates zero altitude.
+
+
+[1] The condition checks whether the remaining time multiplied by the parachute’s terminal velocity (m/s), exceeds the current altitude. This indicates that it is optimal to deploy right now to get close to the target time
+
+Calculating remaining time in seconds and multiplying the remainder by Parachute Terminal Velocity (m/s) to estimate the distance the rocket would fall during that interval, allowing the system to determine whether parachute deployment would result in the best time.
